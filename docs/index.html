@@ -193,6 +193,9 @@
   .modal .box { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 18px; width: 320px; box-shadow: var(--shadow-lg); }
   .modal .box button { width: 100%; margin-top: 8px; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 10px; }
   .modal .box img { width: 24px; height: 24px; }
+  #snow { position: fixed; inset: 0; pointer-events: none; z-index: 30; }
+  button.chip { cursor: pointer; font-family: inherit; }
+  .chip.off { opacity: .55; text-decoration: line-through; }
   .hidden { display: none !important; }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
@@ -203,6 +206,7 @@
     <div class="logo"><span class="mark">🐾</span><div><span class="title">WickPet</span><small>an AI pet for every Agent ID · by HTP96</small></div></div>
     <nav class="nav"><a href="#play">Play</a><a href="#board">Leaderboard</a><a href="#how">How it works</a><a href="https://github.com/wickpetagent/wickpet" target="_blank" rel="noopener">GitHub</a></nav>
     <div class="hdr-right">
+      <button id="snowBtn" class="chip" title="Snow on/off">❄️ Snow</button>
       <span id="btcChip" class="chip mono">BTC …</span>
       <span class="chip"><span class="dot"></span><span id="netChip">BNB Smart Chain</span></span>
       <button id="connectBtn" class="btn primary">Connect wallet</button>
@@ -417,88 +421,111 @@ function moodOf(p) {
   return "ok";
 }
 
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16), t = amt < 0 ? 0 : 255, p = Math.abs(amt);
+  const ch = (v) => Math.round((t - v) * p + v);
+  return "#" + ((1 << 24) | (ch(n >> 16) << 16) | (ch((n >> 8) & 255) << 8) | ch(n & 255)).toString(16).slice(1);
+}
+
 function petSVG(species, stage, mood, opts = {}) {
   const c = COLORS[species] || COLORS[0];
-  const uid = "g" + Math.random().toString(36).slice(2, 8);
+  const u = "p" + Math.random().toString(36).slice(2, 8);
+  const defs = `<defs>
+    <radialGradient id="${u}b" cx="36%" cy="28%" r="78%"><stop offset="0" stop-color="${shade(c.body, .55)}"/><stop offset=".45" stop-color="${c.body}"/><stop offset="1" stop-color="${shade(c.body, -.38)}"/></radialGradient>
+    <radialGradient id="${u}y" cx="45%" cy="30%" r="75%"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="${c.belly}"/><stop offset="1" stop-color="${shade(c.belly, -.14)}"/></radialGradient>
+    <radialGradient id="${u}d" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="${shade(c.dark, .4)}"/><stop offset="1" stop-color="${c.dark}"/></radialGradient>
+    <linearGradient id="${u}h" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fffdf2"/><stop offset="1" stop-color="#d9c48f"/></linearGradient>
+    <radialGradient id="${u}e" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#4b5563"/><stop offset="1" stop-color="#0f172a"/></radialGradient>
+    <radialGradient id="${u}w" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dfe7ee"/></radialGradient>
+    <radialGradient id="${u}k" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fb7185" stop-opacity=".75"/><stop offset="1" stop-color="#fb7185" stop-opacity="0"/></radialGradient>
+    <radialGradient id="${u}s" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#0b1f16" stop-opacity=".38"/><stop offset="1" stop-color="#0b1f16" stop-opacity="0"/></radialGradient>
+    <radialGradient id="${u}g" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#fff7cc"/><stop offset=".5" stop-color="#fcd34d"/><stop offset="1" stop-color="#b45309"/></radialGradient>
+    <radialGradient id="${u}o"><stop offset="0" stop-color="#fde68a" stop-opacity=".5"/><stop offset="1" stop-color="#fde68a" stop-opacity="0"/></radialGradient>
+    <radialGradient id="${u}x" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#fffef8"/><stop offset=".55" stop-color="#f3ead7"/><stop offset="1" stop-color="#cdbb94"/></radialGradient>
+  </defs>`;
+  const ground = (rx) => `<ellipse cx="100" cy="184" rx="${rx}" ry="10" fill="url(#${u}s)"/>`;
+  const gloss = (x, y, rx, ry, rot = -28, op = .55) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" transform="rotate(${rot} ${x} ${y})" fill="#fff" opacity="${op}"/>`;
+
   if (mood === "gone") {
-    return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="100" cy="184" rx="60" ry="8" fill="#0007"/>
+    return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">${defs}${ground(64)}
       <rect x="96" y="70" width="8" height="110" rx="3" fill="#8b6b4a"/>
-      <rect x="44" y="62" width="112" height="44" rx="8" fill="#c79a6b" stroke="#8b6b4a" stroke-width="4"/>
-      <text x="100" y="91" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="14" font-weight="700" fill="#4a3320">RAN AWAY 💨</text>
-      <path d="M58 176 q22 -22 44 0 z" fill="#d1d5db"/><path d="M58 176 h44" stroke="#9ca3af" stroke-width="4" stroke-linecap="round"/>
+      <rect x="44" y="62" width="112" height="44" rx="10" fill="#d6a874" stroke="#8b6b4a" stroke-width="4"/>
+      <rect x="50" y="66" width="100" height="10" rx="5" fill="#fff" opacity=".25"/>
+      <text x="100" y="90" text-anchor="middle" font-family="Plus Jakarta Sans, sans-serif" font-size="14" font-weight="800" fill="#4a3320">RAN AWAY 💨</text>
+      <path d="M56 176 q24 -26 48 0 z" fill="#e5e7eb"/><path d="M56 176 h48" stroke="#9ca3af" stroke-width="4" stroke-linecap="round"/>
       <text x="140" y="172" font-size="20">🐾</text></svg>`;
   }
+
   if (stage === 0) {
-    const crack = opts.crack ? `<path d="M70 102 l10 8 l8 -10 l9 10 l9 -9 l9 9 l8 -8" stroke="#7c6f55" stroke-width="3" fill="none" stroke-linejoin="round"/>` : "";
-    return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="100" cy="184" rx="44" ry="8" fill="#0007"/>
-      <ellipse cx="100" cy="122" rx="46" ry="60" fill="#f5efe1"/>
-      <ellipse cx="84" cy="98" rx="10" ry="13" fill="${c.body}" opacity=".85"/>
-      <ellipse cx="118" cy="132" rx="13" ry="10" fill="${c.body}" opacity=".85"/>
-      <ellipse cx="90" cy="156" rx="8" ry="6" fill="${c.body}" opacity=".85"/>
-      <ellipse cx="124" cy="92" rx="6" ry="5" fill="${c.body}" opacity=".85"/>
-      <ellipse cx="80" cy="88" rx="9" ry="16" fill="#fff" opacity=".5" transform="rotate(20 80 88)"/>
+    const crack = opts.crack ? `<path d="M68 104 l10 8 l8 -10 l9 10 l9 -9 l9 9 l9 -8" stroke="#8a7a58" stroke-width="3" fill="none" stroke-linejoin="round" stroke-linecap="round"/>` : "";
+    const spot = (x, y, rx, ry) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#${u}b)"/>`;
+    return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">${defs}${ground(46)}
+      <ellipse cx="100" cy="122" rx="47" ry="61" fill="url(#${u}x)"/>
+      ${spot(83, 98, 10, 13)}${spot(119, 134, 13, 10)}${spot(90, 157, 8, 6)}${spot(125, 92, 6, 5)}${spot(70, 132, 5, 6)}
+      ${gloss(80, 84, 9, 18, 22, .7)}<circle cx="91" cy="70" r="3" fill="#fff" opacity=".8"/>
       ${crack}</svg>`;
   }
+
   const scale = [1, 0.66, 0.83, 1, 1][stage] || 1;
   const frogEyes = species === 3;
   const eyeY = frogEyes ? 76 : 106;
   const eyes = (() => {
     const L = 80, R = 120, y = eyeY;
-    if (mood === "happy") return `<path d="M${L - 8} ${y + 2} q8 -10 16 0" stroke="#1f2937" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M${R - 8} ${y + 2} q8 -10 16 0" stroke="#1f2937" stroke-width="4" fill="none" stroke-linecap="round"/>`;
-    const r = mood === "starving" ? 7 : 6;
-    let s = `<circle cx="${L}" cy="${y}" r="${r}" fill="#1f2937"/><circle cx="${R}" cy="${y}" r="${r}" fill="#1f2937"/><circle cx="${L + 2}" cy="${y - 2}" r="2" fill="#fff"/><circle cx="${R + 2}" cy="${y - 2}" r="2" fill="#fff"/>`;
-    if (mood === "sad" || mood === "starving") s += `<path d="M${L - 10} ${y - 12} l14 5" stroke="#1f2937" stroke-width="3" stroke-linecap="round"/><path d="M${R + 10} ${y - 12} l-14 5" stroke="#1f2937" stroke-width="3" stroke-linecap="round"/>`;
-    if (mood === "starving") s += `<path d="M${R + 6} ${y + 8} q4 8 0 12 q-4 -4 0 -12z" fill="#60a5fa"/>`;
+    if (mood === "happy") return [L, R].map((x) => `<path d="M${x - 8} ${y + 2} q8 -11 16 0" stroke="#0f172a" stroke-width="4.5" fill="none" stroke-linecap="round"/>`).join("");
+    const r = mood === "starving" ? 8 : 7.5;
+    let s = [L, R].map((x) => `<circle cx="${x}" cy="${y}" r="${r}" fill="url(#${u}e)"/><circle cx="${x - 2.4}" cy="${y - 2.6}" r="2.8" fill="#fff"/><circle cx="${x + 2.6}" cy="${y + 2.4}" r="1.3" fill="#fff" opacity=".85"/>`).join("");
+    if (mood === "sad" || mood === "starving") s += `<path d="M${L - 10} ${y - 13} l14 5" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/><path d="M${R + 10} ${y - 13} l-14 5" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>`;
+    if (mood === "starving") s += `<path d="M${R + 6} ${y + 9} q5 9 0 13 q-5 -4 0 -13z" fill="#60a5fa"/><circle cx="${R + 5}" cy="${y + 16}" r="1.3" fill="#fff"/>`;
     return s;
   })();
   const mouthY = species === 0 ? 140 : 128;
   const mouth = {
-    happy: `<path d="M86 ${mouthY} q14 16 28 0 z" fill="#7f1d1d"/><path d="M93 ${mouthY + 5} q7 6 14 0" fill="#fb7185"/>`,
-    ok: `<path d="M90 ${mouthY} q10 8 20 0" stroke="#1f2937" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
-    sad: `<path d="M90 ${mouthY + 6} q10 -8 20 0" stroke="#1f2937" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+    happy: `<path d="M85 ${mouthY} q15 18 30 0 z" fill="#7f1d1d"/><path d="M92 ${mouthY + 6} q8 7 16 0" fill="#fb7185"/>`,
+    ok: `<path d="M90 ${mouthY} q10 8 20 0" stroke="#0f172a" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+    sad: `<path d="M90 ${mouthY + 6} q10 -8 20 0" stroke="#0f172a" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
     starving: `<ellipse cx="100" cy="${mouthY + 3}" rx="7" ry="8" fill="#7f1d1d"/>`,
   }[mood] || "";
-  const cheeks = mood === "happy" ? `<circle cx="70" cy="${eyeY + 16}" r="7" fill="#fb7185" opacity=".55"/><circle cx="130" cy="${eyeY + 16}" r="7" fill="#fb7185" opacity=".55"/>` : "";
+  const cheeks = mood === "happy" || mood === "ok" ? `<circle cx="68" cy="${eyeY + 17}" r="10" fill="url(#${u}k)"/><circle cx="132" cy="${eyeY + 17}" r="10" fill="url(#${u}k)"/>` : "";
 
   let back = "", front = "";
   switch (species) {
     case 0: // Bull
-      back = `<path d="M60 82 q-22 -6 -26 -30 q14 14 34 16z" fill="#f5f0dc" stroke="#cbbf98" stroke-width="2"/><path d="M140 82 q22 -6 26 -30 q-14 14 -34 16z" fill="#f5f0dc" stroke="#cbbf98" stroke-width="2"/>`;
-      front = `<ellipse cx="100" cy="134" rx="24" ry="15" fill="${c.belly}"/><circle cx="92" cy="133" r="3" fill="${c.dark}"/><circle cx="108" cy="133" r="3" fill="${c.dark}"/><path d="M93 146 a8 8 0 1 0 14 0" stroke="#fbbf24" stroke-width="3" fill="none"/>`;
+      back = `<path d="M60 84 q-24 -6 -28 -32 q15 15 36 17z" fill="url(#${u}h)" stroke="#bfa86f" stroke-width="1.5"/><path d="M140 84 q24 -6 28 -32 q-15 15 -36 17z" fill="url(#${u}h)" stroke="#bfa86f" stroke-width="1.5"/>`;
+      front = `<ellipse cx="100" cy="134" rx="25" ry="16" fill="url(#${u}y)"/><ellipse cx="91" cy="133" rx="3.2" ry="4" fill="${c.dark}"/><ellipse cx="109" cy="133" rx="3.2" ry="4" fill="${c.dark}"/><path d="M92 147 a8 8 0 1 0 16 0" stroke="url(#${u}g)" stroke-width="3.5" fill="none"/>`;
       break;
     case 1: // Bear
-      back = `<circle cx="62" cy="80" r="16" fill="${c.body}"/><circle cx="138" cy="80" r="16" fill="${c.body}"/><circle cx="62" cy="80" r="8" fill="${c.belly}"/><circle cx="138" cy="80" r="8" fill="${c.belly}"/>`;
-      front = `<ellipse cx="100" cy="122" rx="14" ry="10" fill="${c.belly}"/><ellipse cx="100" cy="118" rx="5" ry="4" fill="#1f2937"/>`;
+      back = `<circle cx="62" cy="80" r="17" fill="url(#${u}b)"/><circle cx="138" cy="80" r="17" fill="url(#${u}b)"/><circle cx="62" cy="81" r="8.5" fill="url(#${u}y)"/><circle cx="138" cy="81" r="8.5" fill="url(#${u}y)"/>`;
+      front = `<ellipse cx="100" cy="122" rx="15" ry="11" fill="url(#${u}y)"/><ellipse cx="100" cy="118" rx="5.5" ry="4.2" fill="#0f172a"/><circle cx="98.5" cy="116.8" r="1.4" fill="#fff"/>`;
       break;
     case 2: // Whale
-      back = `<path d="M150 140 q30 -6 34 -30 q-6 14 -18 10 q8 -14 -2 -26 q-4 22 -22 30z" fill="${c.body}"/>`;
-      front = `<path d="M100 60 q-4 -14 -14 -18 M100 60 q0 -16 0 -22 M100 60 q4 -14 14 -18" stroke="#93c5fd" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="86" cy="40" r="4" fill="#93c5fd"/><circle cx="114" cy="40" r="4" fill="#93c5fd"/>`;
+      back = `<path d="M150 140 q32 -6 36 -32 q-6 15 -19 11 q8 -15 -2 -27 q-4 23 -23 31z" fill="url(#${u}b)"/>`;
+      front = `<path d="M100 60 q-4 -14 -14 -18 M100 60 q0 -16 0 -22 M100 60 q4 -14 14 -18" stroke="#93c5fd" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="86" cy="40" r="4.5" fill="#bfdbfe"/><circle cx="114" cy="40" r="4.5" fill="#bfdbfe"/><circle cx="100" cy="34" r="3.5" fill="#dbeafe"/>`;
       break;
     case 3: // Frog
-      back = `<circle cx="80" cy="78" r="18" fill="${c.body}"/><circle cx="120" cy="78" r="18" fill="${c.body}"/><circle cx="80" cy="78" r="12" fill="#fff"/><circle cx="120" cy="78" r="12" fill="#fff"/>`;
+      back = `<circle cx="80" cy="78" r="19" fill="url(#${u}b)"/><circle cx="120" cy="78" r="19" fill="url(#${u}b)"/><circle cx="80" cy="78" r="13" fill="url(#${u}w)"/><circle cx="120" cy="78" r="13" fill="url(#${u}w)"/>`;
       break;
     case 4: // Cat
-      back = `<path d="M56 92 l6 -38 l28 24z" fill="${c.body}"/><path d="M144 92 l-6 -38 l-28 24z" fill="${c.body}"/><path d="M64 84 l3 -20 l14 13z" fill="#fda4af"/><path d="M136 84 l-3 -20 l-14 13z" fill="#fda4af"/>`;
-      front = `<path d="M60 120 h-22 M60 126 l-20 6 M140 120 h22 M140 126 l20 6" stroke="${c.dark}" stroke-width="2.5" stroke-linecap="round"/><path d="M96 118 l4 4 l4 -4z" fill="#fb7185"/>`;
+      back = `<path d="M55 94 l7 -42 l30 26z" fill="url(#${u}b)"/><path d="M145 94 l-7 -42 l-30 26z" fill="url(#${u}b)"/><path d="M64 85 l3 -21 l15 14z" fill="#fda4af"/><path d="M136 85 l-3 -21 l-15 14z" fill="#fda4af"/>`;
+      front = `<path d="M60 120 h-22 M60 126 l-20 6 M140 120 h22 M140 126 l20 6" stroke="${shade(c.dark, .1)}" stroke-width="2.5" stroke-linecap="round" opacity=".8"/><path d="M95 117 l5 5 l5 -5z" fill="#fb7185"/>`;
       break;
     case 5: // Dragon
-      back = `<path d="M70 76 l8 -20 l8 18 l8 -22 l8 22 l8 -18 l8 20z" fill="${c.dark}"/><path d="M48 120 q-30 -30 -26 -50 q16 16 34 22z" fill="${c.dark}" opacity=".9"/><path d="M152 120 q30 -30 26 -50 q-16 16 -34 22z" fill="${c.dark}" opacity=".9"/>`;
-      front = `<circle cx="93" cy="120" r="2.5" fill="${c.dark}"/><circle cx="107" cy="120" r="2.5" fill="${c.dark}"/>`;
+      back = `<path d="M70 78 l8 -21 l8 19 l8 -23 l8 23 l8 -19 l8 21z" fill="url(#${u}d)"/><path d="M48 120 q-32 -30 -28 -52 q17 17 36 23z" fill="url(#${u}d)" opacity=".95"/><path d="M152 120 q32 -30 28 -52 q-17 17 -36 23z" fill="url(#${u}d)" opacity=".95"/>`;
+      front = `<ellipse cx="93" cy="120" rx="2.6" ry="3.2" fill="${c.dark}"/><ellipse cx="107" cy="120" rx="2.6" ry="3.2" fill="${c.dark}"/>`;
       break;
   }
-  const legend = stage === 4 ? `<path d="M76 64 l8 -22 l16 14 l16 -14 l8 22z" fill="#fcd34d" stroke="#b45309" stroke-width="2.5" stroke-linejoin="round"/><circle cx="84" cy="42" r="4" fill="#fde68a"/><circle cx="116" cy="42" r="4" fill="#fde68a"/><circle cx="100" cy="54" r="4" fill="#f87171"/>` : "";
-  const glow = stage === 4 ? `<circle cx="100" cy="118" r="88" fill="url(#${uid})"/>` : "";
-  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <defs><radialGradient id="${uid}"><stop offset="0" stop-color="#fde68a" stop-opacity=".35"/><stop offset="1" stop-color="#fde68a" stop-opacity="0"/></radialGradient></defs>
-    ${glow}
-    <ellipse cx="100" cy="184" rx="${52 * scale}" ry="8" fill="#0007"/>
+  const legend = stage === 4 ? `<path d="M75 64 l8 -23 l17 15 l17 -15 l8 23z" fill="url(#${u}g)" stroke="#92400e" stroke-width="2" stroke-linejoin="round"/><circle cx="83" cy="41" r="4.5" fill="url(#${u}g)"/><circle cx="117" cy="41" r="4.5" fill="url(#${u}g)"/><circle cx="100" cy="55" r="4.5" fill="#f43f5e"/><circle cx="98.6" cy="53.6" r="1.4" fill="#fff"/>` : "";
+  const glow = stage === 4 ? `<circle cx="100" cy="118" r="90" fill="url(#${u}o)"/>` : "";
+  const bw = species === 2 ? 64 : 56, bh = species === 2 ? 50 : 54;
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">${defs}
+    ${glow}${ground(54 * scale)}
     <g transform="translate(100 182) scale(${scale}) translate(-100 -182)">
       ${back}
-      <ellipse cx="100" cy="122" rx="${species === 2 ? 64 : 56}" ry="${species === 2 ? 50 : 54}" fill="${c.body}"/>
-      <ellipse cx="100" cy="146" rx="36" ry="26" fill="${c.belly}" opacity=".9"/>
-      <ellipse cx="76" cy="178" rx="14" ry="7" fill="${c.dark}"/><ellipse cx="124" cy="178" rx="14" ry="7" fill="${c.dark}"/>
+      <ellipse cx="100" cy="122" rx="${bw}" ry="${bh}" fill="url(#${u}b)"/>
+      <ellipse cx="100" cy="148" rx="36" ry="25" fill="url(#${u}y)"/>
+      <ellipse cx="100" cy="${122 + bh - 6}" rx="${bw - 14}" ry="7" fill="${c.dark}" opacity=".12"/>
+      <ellipse cx="76" cy="178" rx="15" ry="7.5" fill="url(#${u}d)"/><ellipse cx="124" cy="178" rx="15" ry="7.5" fill="url(#${u}d)"/>
+      <ellipse cx="72" cy="175.5" rx="6" ry="2.2" fill="#fff" opacity=".35"/><ellipse cx="120" cy="175.5" rx="6" ry="2.2" fill="#fff" opacity=".35"/>
+      ${gloss(74, 86, 17, 9, -32, .5)}<circle cx="64" cy="100" r="3.2" fill="#fff" opacity=".55"/>
       ${eyes}${cheeks}${mouth}${front}${legend}
     </g></svg>`;
 }
@@ -911,6 +938,63 @@ async function loadStats() {
   } catch (e) { console.warn(e); }
 }
 $("heroConnect").onclick = () => { document.getElementById("play").scrollIntoView({ behavior: "smooth" }); if (!state.account) connect(); };
+
+/* ------------------------------------------------------------ snow */
+const Snow = (() => {
+  const cv = document.createElement("canvas");
+  cv.id = "snow";
+  document.body.appendChild(cv);
+  const ctx = cv.getContext("2d");
+  const sprite = document.createElement("canvas");
+  sprite.width = sprite.height = 32;
+  const sc = sprite.getContext("2d"), gr = sc.createRadialGradient(16, 16, 0, 16, 16, 16);
+  gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.5, "rgba(255,255,255,.95)");
+  gr.addColorStop(.72, "rgba(170,215,198,.55)"); gr.addColorStop(1, "rgba(170,215,198,0)");
+  sc.fillStyle = gr; sc.fillRect(0, 0, 32, 32);
+  let W = 0, H = 0, flakes = [], t = 0, running = false;
+  let on = store("wickpet_snow"); if (on === null) on = true;
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) on = false;
+  const mk = (init) => { const z = Math.random(); return { x: Math.random() * W, y: init ? Math.random() * H : -12, r: 1.4 + z * 4.2, z, vy: .35 + z * 1.15, ph: Math.random() * 6.28, amp: .3 + Math.random() * .9, rot: Math.random() * 6.28, star: z > .86 }; };
+  function resize() {
+    const d = Math.min(2, window.devicePixelRatio || 1);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * d; cv.height = H * d; cv.style.width = W + "px"; cv.style.height = H + "px";
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+    const n = Math.round(Math.min(150, (W * H) / 9500));
+    while (flakes.length < n) flakes.push(mk(true));
+    flakes.length = n;
+  }
+  function star(f) {
+    ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.rot);
+    ctx.strokeStyle = `rgba(52,140,118,${.45 + f.z * .35})`; ctx.lineWidth = 1.2; ctx.lineCap = "round";
+    const L = f.r * 2.2;
+    for (let i = 0; i < 6; i++) {
+      ctx.rotate(Math.PI / 3); ctx.beginPath();
+      ctx.moveTo(0, 0); ctx.lineTo(0, L);
+      ctx.moveTo(0, L * .55); ctx.lineTo(L * .28, L * .8);
+      ctx.moveTo(0, L * .55); ctx.lineTo(-L * .28, L * .8);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function frame() {
+    if (!on) { ctx.clearRect(0, 0, W, H); running = false; return; }
+    t += .016; ctx.clearRect(0, 0, W, H);
+    for (const f of flakes) {
+      f.y += f.vy; f.x += Math.sin(t * 1.1 + f.ph) * f.amp * .6 + .12; f.rot += .006;
+      if (f.y > H + 12 || f.x > W + 12 || f.x < -12) Object.assign(f, mk(false));
+      if (f.star) star(f);
+      else { ctx.globalAlpha = .7 + f.z * .3; const s = f.r * 2.4; ctx.drawImage(sprite, f.x - s / 2, f.y - s / 2, s, s); ctx.globalAlpha = 1; }
+    }
+    requestAnimationFrame(frame);
+  }
+  function start() { if (!running && on) { running = true; requestAnimationFrame(frame); } }
+  function set(v) { on = v; store("wickpet_snow", v); const b = $("snowBtn"); if (b) b.classList.toggle("off", !v); start(); }
+  addEventListener("resize", resize);
+  resize(); start();
+  setTimeout(() => { const b = $("snowBtn"); if (b) { b.classList.toggle("off", !on); b.onclick = () => set(!on); } });
+  return { set };
+})();
 
 /* ------------------------------------------------------------ boot */
 (async function boot() {
