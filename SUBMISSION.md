@@ -2,11 +2,11 @@
 
 **Project name:** WickPet
 
-**Website:** https://tranthuha12412-boop.github.io/wickpet/
+**Website:** https://wickpetagent.github.io/wickpet/
 
 **Contract (BNB Chain, verified):** 0x44886b9997Dc2fA7C4C88Fc2EF249105f8c9Da92 (https://bscscan.com/address/0x44886b9997Dc2fA7C4C88Fc2EF249105f8c9Da92#code)
 
-**Source code:** https://github.com/tranthuha12412-boop/wickpet
+**Source code:** https://github.com/wickpetagent/wickpet
 
 **Contact:** X @htp96_community · Telegram @htp96_community
 
