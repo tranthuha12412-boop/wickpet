@@ -9,7 +9,7 @@ AI personality and jokes about the BTC market (entertainment only, never advice)
 
 Built by **HTP96** for the Binance Wallet × BNB Chain **Agent ID Hackathon** (Nov–Dec 2026).
 
-**▶ Play:** https://tranthuha12412-boop.github.io/wickpet/  ·  **Contract (BNB Chain):** [0x44886b9997Dc2fA7C4C88Fc2EF249105f8c9Da92](https://bscscan.com/address/0x44886b9997Dc2fA7C4C88Fc2EF249105f8c9Da92)
+**▶ Play:** https://wickpetagent.github.io/wickpet/  ·  **Contract (BNB Chain):** [0x44886b9997Dc2fA7C4C88Fc2EF249105f8c9Da92](https://bscscan.com/address/0x44886b9997Dc2fA7C4C88Fc2EF249105f8c9Da92)
 
 ---
 
