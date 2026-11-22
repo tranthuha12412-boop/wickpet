@@ -84,7 +84,7 @@
   .hero-stats { display: grid; gap: 12px; }
   .kpi { background: rgba(255,255,255,.85); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; box-shadow: var(--shadow); display: flex; align-items: baseline; justify-content: space-between; gap: 12px; backdrop-filter: blur(8px); transition: transform .25s ease, box-shadow .25s ease; }
   .kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
-  @media (max-width: 900px) { .hero-stats { grid-template-columns: repeat(3, 1fr); } .kpi { flex-direction: column; align-items: flex-start; gap: 2px; padding: 14px; } .kpi b { font-size: 26px !important; } .kpi span { text-align: left; font-size: 12px; } }
+  @media (max-width: 900px) { .hero-stats { grid-template-columns: repeat(3, 1fr); } .kpi { flex-direction: column; align-items: flex-start; gap: 2px; padding: 14px; } .kpi b { font-size: 26px !important; } .kpi span { text-align: left !important; font-size: 12px; } }
   .kpi b { font-size: 34px; font-weight: 800; letter-spacing: -.03em; color: var(--ink); font-variant-numeric: tabular-nums; }
   .kpi span { font-size: 13.5px; font-weight: 600; color: var(--muted); text-align: right; }
 
