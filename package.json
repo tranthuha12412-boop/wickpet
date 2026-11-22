@@ -1,0 +1,20 @@
+{
+  "name": "wickpet",
+  "version": "1.0.0",
+  "description": "WickPet — an on-chain AI pet for every Agent ID (BNB Chain)",
+  "scripts": {
+    "compile": "node scripts/compile.js",
+    "test": "node scripts/compile.js && node test/wickpet.test.js",
+    "deploy:testnet": "NETWORK=testnet node scripts/deploy.js",
+    "deploy:mainnet": "NETWORK=mainnet node scripts/deploy.js",
+    "verify": "node scripts/verify.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "ethers": "^6.13.4",
+    "solc": "0.8.28"
+  },
+  "devDependencies": {
+    "ganache": "^7.9.2"
+  }
+}

@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WickPet — an AI pet for every Agent ID</title>
+<meta name="description" content="Adopt an on-chain AI pet with your Agent ID. Feed it, play with it, keep your streak — or it runs away." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f4fbf6; --panel: rgba(255, 255, 255, .86); --panel2: #f0faf3; --line: rgba(22, 128, 74, .14); --line2: rgba(22, 128, 74, .28);
+    --text: #0f2e1f; --muted: #5d7f6d; --cyan: #10b981; --blue: #16a34a; --indigo: #0d9488; --sky: #15803d;
+    --green: #16a34a; --red: #e11d48; --amber: #f59e0b; --radius: 24px;
+    --grad: linear-gradient(135deg, #4ade80 0%, #22c55e 45%, #0d9488 100%);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; color: var(--text); font-family: Fredoka, system-ui, sans-serif; }
+  body { background: var(--bg); min-height: 100vh; position: relative; overflow-x: hidden; }
+  body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+    background:
+      radial-gradient(800px 520px at 5% -10%, rgba(134, 239, 172, .65), transparent 60%),
+      radial-gradient(700px 480px at 100% 0%, rgba(190, 242, 100, .45), transparent 60%),
+      radial-gradient(900px 600px at 60% 110%, rgba(94, 234, 212, .40), transparent 60%),
+      linear-gradient(180deg, #f7fdf9, #eef9f2); }
+  body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .6;
+    background-image: radial-gradient(rgba(22, 128, 74, .12) 1px, transparent 1.5px); background-size: 26px 26px;
+    mask-image: radial-gradient(ellipse at 50% 0%, #000 25%, transparent 70%); -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 25%, transparent 70%); }
+  a { color: #15803d; }
+  button { font-family: inherit; cursor: pointer; }
+  .mono { font-family: "JetBrains Mono", monospace; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 22px 18px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 14px; border-radius: 22px; background: rgba(255, 255, 255, .78); border: 1px solid var(--line); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 10px 34px rgba(22, 101, 52, .10); }
+  .logo { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 27px; letter-spacing: .3px; line-height: 1.05; }
+  .logo .mark { width: 44px; height: 44px; border-radius: 14px; background: var(--grad); display: grid; place-items: center; box-shadow: 0 6px 18px rgba(34, 197, 94, .45); font-size: 22px; }
+  .logo .title { background: linear-gradient(90deg, #166534, #16a34a 55%, #0d9488); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .logo small { display: block; font-size: 12.5px; color: var(--muted); font-weight: 500; margin-top: 3px; -webkit-text-fill-color: var(--muted); }
+  .hdr-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .chip { padding: 8px 13px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-size: 13px; color: var(--muted); box-shadow: 0 2px 8px rgba(22, 101, 52, .06); }
+  .chip.up { color: #15803d; border-color: rgba(22, 163, 74, .35); background: #f0fdf4; } .chip.down { color: #e11d48; border-color: rgba(225, 29, 72, .3); background: #fff1f3; }
+  .chip .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #22c55e; margin-right: 6px; box-shadow: 0 0 8px #22c55e; animation: pulse 2s infinite; }
+  @keyframes pulse { 50% { opacity: .35 } }
+
+  .btn { border-radius: 14px; padding: 11px 18px; font-weight: 600; font-size: 15px; background: #fff; color: #14532d; border: 1px solid var(--line2); box-shadow: 0 3px 10px rgba(22, 101, 52, .08); transition: transform .1s, box-shadow .2s, filter .2s; }
+  .btn:hover:not(:disabled) { box-shadow: 0 8px 22px rgba(34, 197, 94, .25); border-color: rgba(22, 163, 74, .5); }
+  .btn:active:not(:disabled) { transform: translateY(1px) scale(.99); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; filter: grayscale(.35); box-shadow: none; }
+  .btn.primary { background: var(--grad); color: #fff; border: 0; box-shadow: 0 8px 22px rgba(34, 197, 94, .4), inset 0 1px 0 rgba(255,255,255,.45); text-shadow: 0 1px 2px rgba(6, 60, 30, .25); }
+  .btn.warm { background: linear-gradient(135deg, #d9f99d, #a3e635 50%, #65a30d); color: #1a2e05; border: 0; box-shadow: 0 8px 22px rgba(132, 204, 22, .4), inset 0 1px 0 rgba(255,255,255,.6); }
+  .btn.pink { background: linear-gradient(135deg, #5eead4, #14b8a6 50%, #0f766e); color: #fff; border: 0; box-shadow: 0 8px 22px rgba(20, 184, 166, .4); }
+  .btn.ghost { background: transparent; box-shadow: none; }
+
+  .banner { margin: 14px 0 0; padding: 11px 16px; border-radius: 14px; font-size: 14px; background: #fefce8; border: 1px solid #fde68a; color: #854d0e; }
+
+  .grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 20px; margin-top: 20px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .card { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 18px 50px rgba(22, 101, 52, .10), 0 2px 6px rgba(22, 101, 52, .05); }
+  .card::before { content: ""; position: absolute; left: 24px; right: 24px; top: 0; height: 3px; border-radius: 0 0 6px 6px; background: var(--grad); opacity: .85; }
+  .card h2 { margin: 0 0 14px; font-size: 19px; display: flex; align-items: center; gap: 8px; color: #14532d; }
+  .card h2 .sub { font-size: 13px; color: var(--muted); font-weight: 400; }
+
+  /* Pet stage */
+  .stage { position: relative; border-radius: 20px; overflow: hidden; min-height: 340px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; border: 1px solid var(--line2);
+    background: linear-gradient(180deg, #c7f0ff 0%, #e6fbf0 55%, #d1fae5 100%); box-shadow: inset 0 -30px 60px rgba(34, 197, 94, .12); }
+  .stage::after { content: ""; position: absolute; left: 50%; bottom: 26px; width: 240px; height: 38px; transform: translateX(-50%); border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(255, 255, 255, .9), rgba(187, 247, 208, .6) 60%, transparent); z-index: 0; animation: glow 3s ease-in-out infinite; }
+  @keyframes glow { 50% { opacity: .7; transform: translateX(-50%) scale(.93); } }
+  .stage .sky { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .stage .petbox { width: 260px; height: 260px; position: relative; z-index: 1; cursor: pointer; filter: drop-shadow(0 10px 18px rgba(22, 101, 52, .18)); }
+  .stage .petbox svg { width: 100%; height: 100%; }
+  .bob { animation: bob 2.4s ease-in-out infinite; transform-origin: 50% 90%; }
+  .hop { animation: hop .9s ease-in-out infinite; transform-origin: 50% 90%; }
+  .wobble { animation: wobble 1.6s ease-in-out infinite; transform-origin: 50% 90%; }
+  .slump { animation: bob 4.5s ease-in-out infinite; transform-origin: 50% 90%; filter: saturate(.6); }
+  @keyframes bob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
+  @keyframes hop { 0%,100% { transform: translateY(0) scale(1,1) } 30% { transform: translateY(-18px) scale(.96,1.04) } 60% { transform: translateY(0) scale(1.05,.95) } }
+  @keyframes wobble { 0%,100% { transform: rotate(0) } 25% { transform: rotate(-5deg) } 75% { transform: rotate(5deg) } }
+  @keyframes twinkle { 50% { opacity: .15 } }
+  @keyframes drift { from { transform: translateX(-30px) } to { transform: translateX(30px) } }
+  .bubble { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); max-width: 88%; background: #fff; color: #14532d; padding: 11px 16px; border-radius: 16px; font-size: 15px; line-height: 1.35; box-shadow: 0 8px 24px rgba(22, 101, 52, .18), 0 0 0 2px rgba(34, 197, 94, .25); z-index: 2; min-height: 22px; }
+  .bubble::after { content: ""; position: absolute; bottom: -8px; left: 50%; margin-left: -8px; border: 8px solid transparent; border-top-color: #fff; border-bottom: 0; }
+  .bubble.typing { color: #6b8f7c; }
+  .float { position: absolute; z-index: 3; font-size: 26px; pointer-events: none; animation: floatUp 1.4s ease-out forwards; }
+  @keyframes floatUp { from { opacity: 1; transform: translateY(0) } to { opacity: 0; transform: translateY(-90px) } }
+
+  .petname { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 16px 0 8px; flex-wrap: wrap; }
+  .petname .n { font-size: 30px; font-weight: 700; background: linear-gradient(90deg, #14532d, #16a34a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 12px; padding: 4px 10px; border-radius: 999px; background: #ecfdf3; border: 1px solid #bbf7d0; color: #166534; font-weight: 500; }
+  .tag.gold { color: #92400e; border-color: #fcd34d; background: #fffbeb; }
+  .bars { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; margin: 10px 0 16px; }
+  .bar label { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+  .bar .track { height: 12px; background: #e8f5ec; border-radius: 99px; overflow: hidden; border: 1px solid #d3eedc; }
+  .bar .fill { height: 100%; border-radius: 99px; transition: width .6s; box-shadow: inset 0 1px 0 rgba(255,255,255,.5); }
+  .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .actions .btn { padding: 13px 8px; font-size: 16px; }
+  .actions .btn small { display: block; font-size: 11px; font-weight: 500; opacity: .85; margin-top: 2px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px; }
+  .stat { background: linear-gradient(180deg, #ffffff, #f0fdf4); border: 1px solid var(--line); border-radius: 16px; padding: 10px; text-align: center; }
+  .stat b { display: block; font-size: 22px; color: #15803d; }
+  .stat span { font-size: 11px; color: var(--muted); }
+
+  .talk { display: flex; gap: 8px; margin-top: 16px; }
+  .talk input, .adopt input, .invite input { background: #fff; border: 1px solid var(--line2); color: var(--text); border-radius: 14px; font-family: inherit; transition: border-color .2s, box-shadow .2s; }
+  .talk input { flex: 1; padding: 12px 15px; font-size: 15px; }
+  .talk input:focus, .adopt input:focus { outline: none; border-color: #22c55e; box-shadow: 0 0 0 4px rgba(34, 197, 94, .18); }
+
+  .adopt { text-align: center; padding: 10px 4px; }
+  .adopt h3 { color: #14532d; }
+  .adopt input { width: 100%; max-width: 330px; margin: 14px auto; display: block; padding: 13px 15px; font-size: 16px; text-align: center; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .center { text-align: center; }
+
+  .lb { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .lb th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; padding: 6px; border-bottom: 1px solid var(--line); }
+  .lb td { padding: 8px 6px; border-bottom: 1px solid rgba(22, 128, 74, .08); vertical-align: middle; }
+  .lb tbody tr { transition: background .2s; }
+  .lb tbody tr:hover td { background: #f3fcf6; }
+  .lb tr.me td { background: #dcfce7; }
+  .lb tr.me td:first-child { box-shadow: inset 3px 0 0 #22c55e; }
+  .lb .mini { width: 42px; height: 42px; }
+  .lb .rank { width: 34px; color: var(--muted); font-weight: 700; font-size: 15px; }
+  .lb .gone { opacity: .45; }
+  .lb .tbtn { padding: 5px 10px; font-size: 12px; border-radius: 10px; }
+  .mini svg { width: 100%; height: 100%; display: block; }
+
+  .invite { display: flex; gap: 8px; margin-top: 10px; }
+  .invite input { flex: 1; min-width: 0; color: var(--muted); padding: 10px 11px; font-size: 12px; background: #f7fdf9; }
+  .friend { display: flex; gap: 14px; align-items: center; }
+  .friend .mini { width: 110px; height: 110px; flex: none; border-radius: 20px; background: linear-gradient(180deg, #e0f7ff, #dcfce7); border: 1px solid var(--line); }
+
+  details.agent { margin-top: 14px; background: #f7fdf9; border: 1px solid var(--line); border-radius: 14px; padding: 11px 15px; }
+  details.agent summary { cursor: pointer; font-weight: 600; color: #14532d; }
+  pre.code { background: #0f2e1f; border: 1px solid var(--line); border-radius: 12px; padding: 12px; white-space: pre-wrap; word-break: break-all; font-size: 12px; color: #bbf7d0; }
+  .how { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 900px) { .how { grid-template-columns: 1fr 1fr; } }
+  .how div { background: linear-gradient(180deg, #ffffff, #f2fcf5); border: 1px solid var(--line); border-radius: 18px; padding: 16px; font-size: 14px; color: var(--muted); }
+  .how b { display: block; color: #14532d; font-size: 16px; margin-bottom: 6px; }
+  .how i { font-style: normal; display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: var(--grad); color: #fff; font-weight: 700; margin-bottom: 10px; box-shadow: 0 4px 14px rgba(34, 197, 94, .4); }
+  footer { margin: 28px 0 10px; font-size: 12px; color: var(--muted); line-height: 1.6; border-top: 1px solid var(--line); padding-top: 16px; }
+  .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: #fff; color: var(--text); border: 1px solid var(--line2); padding: 12px 18px; border-radius: 14px; z-index: 50; font-size: 14px; box-shadow: 0 12px 34px rgba(22, 101, 52, .2); max-width: 92vw; }
+  .toast.err { border-color: #fda4af; color: #be123c; }
+  .toast.ok { border-color: #86efac; color: #15803d; }
+  .modal { position: fixed; inset: 0; background: rgba(15, 46, 31, .35); display: flex; align-items: center; justify-content: center; z-index: 60; backdrop-filter: blur(4px); }
+  .modal .box { background: #fff; border: 1px solid var(--line2); border-radius: 18px; padding: 18px; width: 320px; box-shadow: 0 20px 50px rgba(22, 101, 52, .25); }
+  .modal .box button { width: 100%; margin-top: 8px; display: flex; align-items: center; gap: 10px; }
+  .modal .box img { width: 24px; height: 24px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><span class="mark">🐾</span><div><span class="title">WickPet</span><small>an AI pet for every Agent ID · by HTP96</small></div></div>
+    <div class="hdr-right">
+      <span id="btcChip" class="chip mono">BTC …</span>
+      <span class="chip"><span class="dot"></span><span id="netChip">BNB Smart Chain</span></span>
+      <button id="connectBtn" class="btn primary">Connect wallet</button>
+    </div>
+  </header>
+
+  <div id="banner" class="banner hidden"></div>
+
+  <div class="grid">
+    <!-- LEFT: my pet -->
+    <section class="card">
+      <h2>🐾 <span id="petTitle">Your pet</span> <span id="petSub" class="sub"></span></h2>
+
+      <div class="stage" id="stage">
+        <svg class="sky" id="sky" viewBox="0 0 400 330" preserveAspectRatio="none"></svg>
+        <div class="bubble" id="bubble">gm! Connect your wallet to meet your pet.</div>
+        <div class="petbox" id="petbox"></div>
+      </div>
+
+      <!-- Has pet -->
+      <div id="petPanel" class="hidden">
+        <div class="petname">
+          <span class="n" id="pName">—</span>
+          <span class="tags" id="pTags"></span>
+        </div>
+        <div class="bars">
+          <div class="bar"><label><span>🍖 Fullness</span><span id="fullTxt"></span></label><div class="track"><div class="fill" id="fullBar"></div></div></div>
+          <div class="bar"><label><span>💛 Happiness</span><span id="happyTxt"></span></label><div class="track"><div class="fill" id="happyBar"></div></div></div>
+          <div class="bar" style="grid-column: 1 / -1"><label><span>✨ XP · Level <b id="lvl">1</b></span><span id="xpTxt"></span></label><div class="track"><div class="fill" id="xpBar" style="background: linear-gradient(90deg,#bef264,#34d399,#14b8a6)"></div></div></div>
+        </div>
+        <div class="actions" id="liveActions">
+          <button class="btn warm" id="feedBtn">🍖 Feed<small id="feedCd">ready</small></button>
+          <button class="btn primary" id="playBtn">🎾 Play<small id="playCd">ready</small></button>
+          <button class="btn" id="shareBtn">📣 Share<small>post on X</small></button>
+        </div>
+        <div class="actions hidden" id="goneActions" style="grid-template-columns: 1fr 1fr">
+          <button class="btn warm" id="callHomeBtn">🏠 Call it home<small>keeps pet, −50% XP</small></button>
+          <button class="btn" id="readoptBtn">🥚 Adopt a new egg<small>next generation</small></button>
+        </div>
+        <div class="talk">
+          <input id="talkInput" maxlength="200" placeholder="Talk to your pet… (try: how's the market?)" />
+          <button class="btn" id="talkBtn">Say</button>
+        </div>
+        <div class="stats">
+          <div class="stat"><b id="sStreak">0</b><span>🔥 day streak</span></div>
+          <div class="stat"><b id="sBest">0</b><span>best streak</span></div>
+          <div class="stat"><b id="sTreatsIn">0</b><span>🍬 treats got</span></div>
+          <div class="stat"><b id="sAge">0d</b><span>age</span></div>
+        </div>
+        <details class="agent" id="agentBox">
+          <summary>🤖 Let your AI agent take care of it (Agentic Wallet)</summary>
+          <p class="small muted">Your Agentic Wallet can call WickPet directly. Paste this to your AI agent. The agent must show you every transaction for confirmation. WickPet never asks for token approvals or transfers.</p>
+          <pre class="code" id="agentPrompt"></pre>
+          <button class="btn ghost small" id="copyAgent">Copy instructions</button>
+        </details>
+      </div>
+
+      <!-- Adopt -->
+      <div id="adoptPanel" class="adopt hidden">
+        <h3 style="margin:14px 0 4px">An egg is waiting for you 🥚</h3>
+        <p class="muted small">One pet per Agent ID. Species is decided by the chain: Bull, Bear, Whale, Frog, Cat or Dragon.</p>
+        <input id="nameInput" maxlength="20" placeholder="Name your pet (letters, numbers, . - _)" />
+        <button class="btn primary" id="adoptBtn">Adopt</button>
+      </div>
+
+      <!-- No Agent ID -->
+      <div id="noIdPanel" class="adopt hidden">
+        <h3 style="margin:14px 0 4px">This wallet has no Agent ID yet</h3>
+        <p class="muted small">WickPet is for Agent ID holders only: one person, one pet.<br />Get yours in the Binance app: <b>Wallet → home banner → Agent ID</b>, then connect the wallet that holds it.</p>
+      </div>
+    </section>
+
+    <!-- RIGHT: friends + leaderboard -->
+    <section style="display:flex;flex-direction:column;gap:18px">
+      <div class="card hidden" id="friendCard">
+        <h2>🍬 Visit a friend's pet</h2>
+        <div class="friend">
+          <div class="mini" id="friendSvg"></div>
+          <div>
+            <div style="font-size:20px;font-weight:700" id="friendName">—</div>
+            <div class="small muted" id="friendInfo"></div>
+            <button class="btn pink" id="friendTreatBtn" style="margin-top:10px">Send a treat 🍬</button>
+            <div class="small muted" id="friendNote" style="margin-top:6px">A treat removes 12h of hunger. +5 XP for them, +3 XP for you.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="inviteCard">
+        <h2>🤝 Invite friends <span class="sub">friends can keep your pet alive</span></h2>
+        <p class="small muted" style="margin:0">Share your link. Friends with an Agent ID can send your pet a treat once a day.</p>
+        <div class="invite"><input id="inviteLink" readonly value="Connect your wallet to get your link" /><button class="btn" id="copyInvite">Copy</button></div>
+      </div>
+
+      <div class="card">
+        <h2>🏆 Leaderboard <span class="sub" id="lbSub"></span></h2>
+        <table class="lb"><thead><tr><th></th><th></th><th>Pet</th><th>Lvl</th><th>🔥</th><th></th></tr></thead><tbody id="lbBody"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody></table>
+      </div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:18px">
+    <h2>How it works</h2>
+    <div class="how">
+      <div><i>1</i><b>Agent ID = 1 pet</b>Your Agent ID (name.ai) is non-transferable, so every pet belongs to one real person. No bot farms.</div>
+      <div><i>2</i><b>Care every day</b>Feed and play every 4 hours. Caring on consecutive days builds a streak and bonus XP.</div>
+      <div><i>3</i><b>Don't ghost it</b>72 hours without food and your pet runs away. Call it home (−50% XP) or start a new generation.</div>
+      <div><i>4</i><b>It talks</b>Each pet has its own personality and comments on the BTC market. Entertainment only, never advice.</div>
+    </div>
+  </section>
+
+  <footer>
+    <b>Risk warning.</b> WickPet is an on-chain game. It is not a financial product and offers no yield, income or returns. Your pet's market chatter is entertainment, not financial advice. Every action is a blockchain transaction you confirm yourself and pay network gas for. The WickPet contract has no owner, holds no funds, never requests token approvals and never transfers your assets; its source code is verified on BscScan. Interacting with smart contracts always carries risk. Not affiliated with or endorsed by Binance.
+    <br />Contract: <a id="contractLink" class="mono" target="_blank" rel="noopener">—</a> · Agent ID contract: <span class="mono">0x60b9…b022f</span> · #BinanceWalletHackathon #AgenticWallet
+  </footer>
+</div>
+
+<script>
+/* =========================================================================
+   CONFIG — set CONTRACT after deploying (see README). Empty = demo mode.
+   URL overrides for testing: ?contract=0x..&rpc=http://..&chain=1337
+   ========================================================================= */
+const CONFIG = {
+  contract: "",
+  chainId: 56,
+  chainName: "BNB Smart Chain",
+  rpc: "https://bsc-dataseed.bnbchain.org",
+  explorer: "https://bscscan.com",
+  aiEndpoint: "", // optional: URL of ai-worker (see /ai-worker). Empty = built-in personality engine.
+};
+(() => {
+  const q = new URLSearchParams(location.search);
+  if (q.get("contract")) CONFIG.contract = q.get("contract");
+  if (q.get("rpc")) CONFIG.rpc = q.get("rpc");
+  if (q.get("chain")) CONFIG.chainId = Number(q.get("chain"));
+  if (q.get("ai")) CONFIG.aiEndpoint = q.get("ai");
+})();
+
+const ABI = [
+  "function adopt(string name)",
+  "function feed()",
+  "function play()",
+  "function sendTreat(address friend)",
+  "function callHome()",
+  "function hasAgentId(address) view returns (bool)",
+  "function hasPet(address) view returns (bool)",
+  "function keeperCount() view returns (uint256)",
+  "function lastTreat(address,address) view returns (uint64)",
+  "function getPet(address) view returns (tuple(address keeper,string name,uint8 species,uint32 generation,uint64 bornAt,uint64 lastFed,uint64 lastPlayed,uint32 xp,uint32 level,uint8 stage,uint8 hunger,uint8 happiness,bool ranAway,uint32 feeds,uint32 plays,uint32 treatsReceived,uint32 treatsGiven,uint32 streak,uint32 bestStreak,uint64 nextFeedAt,uint64 nextPlayAt))",
+  "function getPets(uint256 offset,uint256 limit) view returns (tuple(address keeper,string name,uint8 species,uint32 generation,uint64 bornAt,uint64 lastFed,uint64 lastPlayed,uint32 xp,uint32 level,uint8 stage,uint8 hunger,uint8 happiness,bool ranAway,uint32 feeds,uint32 plays,uint32 treatsReceived,uint32 treatsGiven,uint32 streak,uint32 bestStreak,uint64 nextFeedAt,uint64 nextPlayAt)[])",
+  "error NoAgentID()", "error AlreadyHasPet()", "error NoPet()", "error PetRanAway()", "error PetIsHome()",
+  "error TooSoon(uint256 readyAt)", "error BadName()", "error CannotTreatSelf()",
+];
+const ERR_TEXT = {
+  NoAgentID: "This wallet doesn't hold an Agent ID.",
+  AlreadyHasPet: "You already have a pet at home.",
+  NoPet: "No pet found for this wallet.",
+  PetRanAway: "This pet ran away. Call it home first.",
+  PetIsHome: "Your pet is already home.",
+  TooSoon: "Too soon! Wait for the cooldown.",
+  BadName: "Names: 1–20 characters, letters, numbers, space . - _",
+  CannotTreatSelf: "You can't send a treat to yourself 🙂",
+};
+
+const SPECIES = ["Bull", "Bear", "Whale", "Frog", "Cat", "Dragon"];
+const STAGES = ["Egg", "Baby", "Teen", "Adult", "Legend"];
+const COLORS = [
+  { body: "#34d399", belly: "#a7f3d0", dark: "#0f766e" }, // Bull
+  { body: "#fb7185", belly: "#fecdd3", dark: "#9f1239" }, // Bear
+  { body: "#60a5fa", belly: "#dbeafe", dark: "#1e40af" }, // Whale
+  { body: "#a3e635", belly: "#ecfccb", dark: "#3f6212" }, // Frog
+  { body: "#fbbf24", belly: "#fef3c7", dark: "#92400e" }, // Cat
+  { body: "#c084fc", belly: "#f3e8ff", dark: "#6b21a8" }, // Dragon
+];
+const FEED_CD = 4 * 3600, PLAY_CD = 4 * 3600;
+
+/* ------------------------------------------------------------------ utils */
+const $ = (id) => document.getElementById(id);
+const short = (a) => a ? a.slice(0, 6) + "…" + a.slice(-4) : "";
+const now = () => Math.floor(Date.now() / 1000);
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const fmtCd = (s) => { s = Math.max(0, s); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return h ? `${h}h ${m}m` : m ? `${m}m ${x}s` : `${x}s`; };
+function toast(msg, kind = "") { document.querySelectorAll(".toast").forEach((x) => x.remove()); const t = document.createElement("div"); t.className = "toast " + kind; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 4200); }
+function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch { return null; } }
+function hash32(str) { let h = 2166136261; for (const c of String(str).toLowerCase()) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+/* ------------------------------------------------------------ pet drawing */
+function moodOf(p) {
+  if (!p) return "ok";
+  if (p.ranAway) return "gone";
+  if (p.stage === 0) return "egg";
+  if (p.hunger >= 75) return "starving";
+  if (p.hunger >= 50 || p.happiness <= 25) return "sad";
+  if (p.happiness >= 65 && p.hunger < 35) return "happy";
+  return "ok";
+}
+
+function petSVG(species, stage, mood, opts = {}) {
+  const c = COLORS[species] || COLORS[0];
+  const uid = "g" + Math.random().toString(36).slice(2, 8);
+  if (mood === "gone") {
+    return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="100" cy="184" rx="60" ry="8" fill="#0007"/>
+      <rect x="96" y="70" width="8" height="110" rx="3" fill="#8b6b4a"/>
+      <rect x="44" y="62" width="112" height="44" rx="8" fill="#c79a6b" stroke="#8b6b4a" stroke-width="4"/>
+      <text x="100" y="91" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="14" font-weight="700" fill="#4a3320">RAN AWAY 💨</text>
+      <path d="M58 176 q22 -22 44 0 z" fill="#d1d5db"/><path d="M58 176 h44" stroke="#9ca3af" stroke-width="4" stroke-linecap="round"/>
+      <text x="140" y="172" font-size="20">🐾</text></svg>`;
+  }
+  if (stage === 0) {
+    const crack = opts.crack ? `<path d="M70 102 l10 8 l8 -10 l9 10 l9 -9 l9 9 l8 -8" stroke="#7c6f55" stroke-width="3" fill="none" stroke-linejoin="round"/>` : "";
+    return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="100" cy="184" rx="44" ry="8" fill="#0007"/>
+      <ellipse cx="100" cy="122" rx="46" ry="60" fill="#f5efe1"/>
+      <ellipse cx="84" cy="98" rx="10" ry="13" fill="${c.body}" opacity=".85"/>
+      <ellipse cx="118" cy="132" rx="13" ry="10" fill="${c.body}" opacity=".85"/>
+      <ellipse cx="90" cy="156" rx="8" ry="6" fill="${c.body}" opacity=".85"/>
+      <ellipse cx="124" cy="92" rx="6" ry="5" fill="${c.body}" opacity=".85"/>
+      <ellipse cx="80" cy="88" rx="9" ry="16" fill="#fff" opacity=".5" transform="rotate(20 80 88)"/>
+      ${crack}</svg>`;
+  }
+  const scale = [1, 0.66, 0.83, 1, 1][stage] || 1;
+  const frogEyes = species === 3;
+  const eyeY = frogEyes ? 76 : 106;
+  const eyes = (() => {
+    const L = 80, R = 120, y = eyeY;
+    if (mood === "happy") return `<path d="M${L - 8} ${y + 2} q8 -10 16 0" stroke="#1f2937" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M${R - 8} ${y + 2} q8 -10 16 0" stroke="#1f2937" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+    const r = mood === "starving" ? 7 : 6;
+    let s = `<circle cx="${L}" cy="${y}" r="${r}" fill="#1f2937"/><circle cx="${R}" cy="${y}" r="${r}" fill="#1f2937"/><circle cx="${L + 2}" cy="${y - 2}" r="2" fill="#fff"/><circle cx="${R + 2}" cy="${y - 2}" r="2" fill="#fff"/>`;
+    if (mood === "sad" || mood === "starving") s += `<path d="M${L - 10} ${y - 12} l14 5" stroke="#1f2937" stroke-width="3" stroke-linecap="round"/><path d="M${R + 10} ${y - 12} l-14 5" stroke="#1f2937" stroke-width="3" stroke-linecap="round"/>`;
+    if (mood === "starving") s += `<path d="M${R + 6} ${y + 8} q4 8 0 12 q-4 -4 0 -12z" fill="#60a5fa"/>`;
+    return s;
+  })();
+  const mouthY = species === 0 ? 140 : 128;
+  const mouth = {
+    happy: `<path d="M86 ${mouthY} q14 16 28 0 z" fill="#7f1d1d"/><path d="M93 ${mouthY + 5} q7 6 14 0" fill="#fb7185"/>`,
+    ok: `<path d="M90 ${mouthY} q10 8 20 0" stroke="#1f2937" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+    sad: `<path d="M90 ${mouthY + 6} q10 -8 20 0" stroke="#1f2937" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+    starving: `<ellipse cx="100" cy="${mouthY + 3}" rx="7" ry="8" fill="#7f1d1d"/>`,
+  }[mood] || "";
+  const cheeks = mood === "happy" ? `<circle cx="70" cy="${eyeY + 16}" r="7" fill="#fb7185" opacity=".55"/><circle cx="130" cy="${eyeY + 16}" r="7" fill="#fb7185" opacity=".55"/>` : "";
+
+  let back = "", front = "";
+  switch (species) {
+    case 0: // Bull
+      back = `<path d="M60 82 q-22 -6 -26 -30 q14 14 34 16z" fill="#f5f0dc" stroke="#cbbf98" stroke-width="2"/><path d="M140 82 q22 -6 26 -30 q-14 14 -34 16z" fill="#f5f0dc" stroke="#cbbf98" stroke-width="2"/>`;
+      front = `<ellipse cx="100" cy="134" rx="24" ry="15" fill="${c.belly}"/><circle cx="92" cy="133" r="3" fill="${c.dark}"/><circle cx="108" cy="133" r="3" fill="${c.dark}"/><path d="M93 146 a8 8 0 1 0 14 0" stroke="#fbbf24" stroke-width="3" fill="none"/>`;
+      break;
+    case 1: // Bear
+      back = `<circle cx="62" cy="80" r="16" fill="${c.body}"/><circle cx="138" cy="80" r="16" fill="${c.body}"/><circle cx="62" cy="80" r="8" fill="${c.belly}"/><circle cx="138" cy="80" r="8" fill="${c.belly}"/>`;
+      front = `<ellipse cx="100" cy="122" rx="14" ry="10" fill="${c.belly}"/><ellipse cx="100" cy="118" rx="5" ry="4" fill="#1f2937"/>`;
+      break;
+    case 2: // Whale
+      back = `<path d="M150 140 q30 -6 34 -30 q-6 14 -18 10 q8 -14 -2 -26 q-4 22 -22 30z" fill="${c.body}"/>`;
+      front = `<path d="M100 60 q-4 -14 -14 -18 M100 60 q0 -16 0 -22 M100 60 q4 -14 14 -18" stroke="#93c5fd" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="86" cy="40" r="4" fill="#93c5fd"/><circle cx="114" cy="40" r="4" fill="#93c5fd"/>`;
+      break;
+    case 3: // Frog
+      back = `<circle cx="80" cy="78" r="18" fill="${c.body}"/><circle cx="120" cy="78" r="18" fill="${c.body}"/><circle cx="80" cy="78" r="12" fill="#fff"/><circle cx="120" cy="78" r="12" fill="#fff"/>`;
+      break;
+    case 4: // Cat
+      back = `<path d="M56 92 l6 -38 l28 24z" fill="${c.body}"/><path d="M144 92 l-6 -38 l-28 24z" fill="${c.body}"/><path d="M64 84 l3 -20 l14 13z" fill="#fda4af"/><path d="M136 84 l-3 -20 l-14 13z" fill="#fda4af"/>`;
+      front = `<path d="M60 120 h-22 M60 126 l-20 6 M140 120 h22 M140 126 l20 6" stroke="${c.dark}" stroke-width="2.5" stroke-linecap="round"/><path d="M96 118 l4 4 l4 -4z" fill="#fb7185"/>`;
+      break;
+    case 5: // Dragon
+      back = `<path d="M70 76 l8 -20 l8 18 l8 -22 l8 22 l8 -18 l8 20z" fill="${c.dark}"/><path d="M48 120 q-30 -30 -26 -50 q16 16 34 22z" fill="${c.dark}" opacity=".9"/><path d="M152 120 q30 -30 26 -50 q-16 16 -34 22z" fill="${c.dark}" opacity=".9"/>`;
+      front = `<circle cx="93" cy="120" r="2.5" fill="${c.dark}"/><circle cx="107" cy="120" r="2.5" fill="${c.dark}"/>`;
+      break;
+  }
+  const legend = stage === 4 ? `<path d="M76 64 l8 -22 l16 14 l16 -14 l8 22z" fill="#fcd34d" stroke="#b45309" stroke-width="2.5" stroke-linejoin="round"/><circle cx="84" cy="42" r="4" fill="#fde68a"/><circle cx="116" cy="42" r="4" fill="#fde68a"/><circle cx="100" cy="54" r="4" fill="#f87171"/>` : "";
+  const glow = stage === 4 ? `<circle cx="100" cy="118" r="88" fill="url(#${uid})"/>` : "";
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs><radialGradient id="${uid}"><stop offset="0" stop-color="#fde68a" stop-opacity=".35"/><stop offset="1" stop-color="#fde68a" stop-opacity="0"/></radialGradient></defs>
+    ${glow}
+    <ellipse cx="100" cy="184" rx="${52 * scale}" ry="8" fill="#0007"/>
+    <g transform="translate(100 182) scale(${scale}) translate(-100 -182)">
+      ${back}
+      <ellipse cx="100" cy="122" rx="${species === 2 ? 64 : 56}" ry="${species === 2 ? 50 : 54}" fill="${c.body}"/>
+      <ellipse cx="100" cy="146" rx="36" ry="26" fill="${c.belly}" opacity=".9"/>
+      <ellipse cx="76" cy="178" rx="14" ry="7" fill="${c.dark}"/><ellipse cx="124" cy="178" rx="14" ry="7" fill="${c.dark}"/>
+      ${eyes}${cheeks}${mouth}${front}${legend}
+    </g></svg>`;
+}
+
+function drawSky(btcChange) {
+  const up = btcChange >= 0;
+  const sun = `<defs><radialGradient id="sunGlow"><stop offset="0" stop-color="#fde047" stop-opacity=".75"/><stop offset="1" stop-color="#fde047" stop-opacity="0"/></radialGradient>
+      <linearGradient id="hill1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4ade80"/><stop offset="1" stop-color="#16a34a"/></linearGradient>
+      <linearGradient id="hill2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#86efac"/><stop offset="1" stop-color="#4ade80"/></linearGradient></defs>
+    <circle cx="340" cy="56" r="58" fill="url(#sunGlow)"/><circle cx="340" cy="56" r="22" fill="#fde047"/><circle cx="340" cy="56" r="16" fill="#fef08a"/>`;
+  const cloud = (x, y, k, d) => `<g style="animation: drift ${d}s ease-in-out infinite alternate"><g transform="translate(${x} ${y}) scale(${k})" fill="#fff" opacity=".92"><ellipse cx="0" cy="10" rx="34" ry="13"/><circle cx="-12" cy="2" r="14"/><circle cx="10" cy="-2" r="18"/><circle cx="26" cy="6" r="11"/></g></g>`;
+  const candles = Array.from({ length: 14 }, (_, i) => {
+    const x = 14 + i * 28, g = Math.sin(i * 1.7 + (btcChange || 0)) > -0.2 ? up : !up;
+    const h = 18 + ((i * 37) % 40), y = 92 + ((i * 53) % 80);
+    const col = g ? "#22c55e" : "#f43f5e";
+    return `<line x1="${x + 5}" y1="${y - 12}" x2="${x + 5}" y2="${y + h + 12}" stroke="${col}" stroke-width="1.5" opacity=".22"/><rect x="${x}" y="${y}" width="10" height="${h}" rx="2" fill="${col}" opacity=".16"/>`;
+  }).join("");
+  const hills = `<path d="M0 282 Q80 262 170 280 T340 272 T400 278 V330 H0Z" fill="url(#hill2)"/>
+    <path d="M0 300 Q100 284 200 292 T400 288 V330 H0Z" fill="url(#hill1)"/>
+    ${Array.from({ length: 9 }, (_, i) => `<text x="${20 + i * 46}" y="${312 + (i % 3) * 6}" font-size="12">${["🌱", "🌼", "🍀"][i % 3]}</text>`).join("")}`;
+  $("sky").innerHTML = sun + cloud(70, 48, 1, 9) + cloud(220, 30, .7, 12) + candles + hills;
+}
+
+/* ------------------------------------------------- personality engine */
+const TRAITS = [
+  { id: "Degen", tail: ["LFG.", "Wen snack?", "Send it.", "Full port into treats."] },
+  { id: "HODLer", tail: ["Diamond paws 💎🐾", "I don't sell. Not even my toys.", "Zoom out, ser."] },
+  { id: "Scalper", tail: ["In and out, like my naps.", "Quick bite, quick exit.", "5-minute chart, 5-minute attention span."] },
+  { id: "Doomer", tail: ["Probably nothing.", "We're all gonna make it… maybe.", "I've seen this movie before."] },
+  { id: "Moonboy", tail: ["To the moon (of my food bowl) 🌕", "Number go up. Belly go up.", "Bullish on snacks."] },
+  { id: "Zen", tail: ["Breathe in, candle out.", "The wick passes. Lunch remains.", "Be like water. Or like a full bowl."] },
+];
+function traitOf(addr) { return TRAITS[hash32(addr || "demo") % TRAITS.length]; }
+
+const LINES = {
+  pump: ["BTC is up {chg}% today. I'm doing zoomies around the chart.", "Green candles everywhere. I ate one. Tasted like {chg}%.", "Up {chg}%? Don't get cocky, wicks have teeth.", "{chg}% green day. Celebration snack, please?"],
+  dump: ["BTC is down {chg}%. I'm hiding under the couch until the wick recovers.", "Red day ({chg}%). Feed me and I'll pretend I didn't see the chart.", "{chg}%… that wick hurt my feelings.", "Market is bleeding {chg}%. I'm emotionally long on cuddles."],
+  crab: ["BTC moved {chg}% today. Crab market. I'm also a crab now 🦀", "Sideways again ({chg}%). My tail moves more than this chart.", "Boring chart, exciting snacks. Priorities.", "{chg}%? Even I'm napping through this one."],
+  starving: ["I'm SO hungry I'd eat a red candle. Feed me!", "If I don't eat soon I'm packing my bags. Not a joke.", "Hunger level: liquidation. 🍖 please.", "My bowl is emptier than a rug-pulled pool."],
+  sad: ["Play with me? I've been staring at charts alone.", "Feeling a bit rekt. Some attention would help.", "You check the chart 100 times a day but not me? 🥺", "I need a pump. A happiness pump."],
+  happy: ["Life is good. Full belly, full heart, zero leverage.", "Best keeper ever. That's not financial advice, that's a fact.", "I'm so happy I could print a green candle.", "Streak gang 🔥 Don't break it!"],
+  ok: ["gm! What are we doing today?", "I'm fine. Could be finer with a snack.", "Just vibing on-chain.", "Did you know I live on BNB Chain? Fancy, right?"],
+  egg: ["*the egg wobbles*", "*tap tap* … something is moving inside", "Feed me to hatch! (Yes, eggs eat. Don't ask.)", "*crrrk* … almost there…"],
+  gone: ["(silence… your pet packed its bag and left. Call it home?)", "(the bowl is empty and so is the house…)"],
+  advice: ["I'm a pet, not a financial advisor. My only position is 'on the couch'.", "NFA. I can't even hold a pen. DYOR, then feed me.", "Signals? The only signal I give is 'hungry'.", "I don't pick coins. I pick snacks."],
+  love: ["Love you too! Now about that snack…", "🥹 Okay you get one free cuddle.", "Best. Keeper. Ever."],
+  name: ["I'm {name}, a {species} with a {trait} soul. Nice to meet you!", "{name}. Level {level} {species}. Professional snack enjoyer."],
+  thanks: ["Nom nom nom! 😋", "Yum! My belly says thank you.", "That hit the spot. +XP for both of us!"],
+  played: ["Wheee! Again! Again!", "That was fun! My happiness just pumped 📈", "Best play session since the last ATH."],
+};
+function fill(t, ctx) { return t.replace(/\{(\w+)\}/g, (_, k) => ctx[k] ?? ""); }
+function localReply(ctx, message) {
+  const m = (message || "").toLowerCase();
+  let pool;
+  if (ctx.mood === "gone") pool = LINES.gone;
+  else if (ctx.mood === "egg") pool = LINES.egg;
+  else if (/\b(buy|sell|long|short|ape|signal|entry|which coin|pump it|tp|sl|leverage|x100)\b/.test(m)) pool = LINES.advice;
+  else if (/(market|btc|bitcoin|price|chart|pump|dump|crypto)/.test(m)) pool = ctx.chgNum > 2 ? LINES.pump : ctx.chgNum < -2 ? LINES.dump : LINES.crab;
+  else if (/(love|cute|good (boy|girl|pet))/.test(m)) pool = LINES.love;
+  else if (/(name|who are you|what are you)/.test(m)) pool = LINES.name;
+  else if (/(hungry|food|eat)/.test(m)) pool = ctx.hunger > 40 ? LINES.starving : ["I'm good for now! Ask me again in a few hours."];
+  else if (ctx.mood === "starving" || ctx.mood === "sad") pool = LINES[ctx.mood];
+  else pool = Math.random() < 0.45 && ctx.chgNum !== null ? (ctx.chgNum > 2 ? LINES.pump : ctx.chgNum < -2 ? LINES.dump : LINES.crab) : LINES[ctx.mood] || LINES.ok;
+  let line = fill(pick(pool), ctx);
+  if (ctx.mood !== "egg" && ctx.mood !== "gone" && Math.random() < 0.5) line += " " + pick(ctx.traitObj.tail);
+  return line;
+}
+async function petSays(message) {
+  if (!state.pet && !state.demo) return;
+  const p = state.pet;
+  const traitObj = traitOf(state.account);
+  const ctx = {
+    name: p.name, species: SPECIES[p.species], level: p.level, trait: traitObj.id, traitObj,
+    mood: moodOf(p), hunger: p.hunger, happiness: p.happiness,
+    chgNum: state.btc ? state.btc.chg : null,
+    chg: state.btc ? (state.btc.chg >= 0 ? "+" : "") + state.btc.chg.toFixed(2) : "0",
+  };
+  const bubble = $("bubble");
+  if (CONFIG.aiEndpoint && message && ctx.mood !== "gone") {
+    bubble.className = "bubble typing"; bubble.textContent = "…";
+    try {
+      const r = await fetch(CONFIG.aiEndpoint, { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message, pet: { name: ctx.name, species: ctx.species, stage: STAGES[p.stage], level: p.level, trait: ctx.trait, mood: ctx.mood, hunger: p.hunger, happiness: p.happiness, streak: p.streak }, market: { btcChange24h: ctx.chgNum } }) });
+      const j = await r.json();
+      if (j.reply) { bubble.className = "bubble"; bubble.textContent = j.reply; return; }
+    } catch {}
+  }
+  bubble.className = "bubble";
+  bubble.textContent = localReply(ctx, message);
+}
+
+/* ------------------------------------------------------------ market */
+async function loadBtc() {
+  for (const host of ["https://api.binance.com", "https://data-api.binance.vision"]) {
+    try {
+      const r = await fetch(host + "/api/v3/ticker/24hr?symbol=BTCUSDT");
+      if (!r.ok) continue;
+      const j = await r.json();
+      state.btc = { price: Number(j.lastPrice), chg: Number(j.priceChangePercent) };
+      const chip = $("btcChip");
+      chip.textContent = `BTC $${Math.round(state.btc.price).toLocaleString()} ${state.btc.chg >= 0 ? "▲" : "▼"} ${Math.abs(state.btc.chg).toFixed(2)}%`;
+      chip.className = "chip mono " + (state.btc.chg >= 0 ? "up" : "down");
+      drawSky(state.btc.chg);
+      return;
+    } catch {}
+  }
+  $("btcChip").textContent = "BTC —";
+}
+
+/* ------------------------------------------------------------ chain */
+const state = { account: null, signer: null, pet: null, hasId: false, btc: null, demo: !CONFIG.contract, friend: null, list: [], busy: false, eip6963: [] };
+const readProvider = CONFIG.contract ? new ethers.JsonRpcProvider(CONFIG.rpc, CONFIG.chainId, { staticNetwork: true }) : null;
+const readC = CONFIG.contract ? new ethers.Contract(CONFIG.contract, ABI, readProvider) : null;
+const iface = new ethers.Interface(ABI);
+
+function toPet(v) {
+  return { keeper: v.keeper, name: v.name, species: Number(v.species), generation: Number(v.generation), bornAt: Number(v.bornAt), lastFed: Number(v.lastFed), lastPlayed: Number(v.lastPlayed), xp: Number(v.xp), level: Number(v.level), stage: Number(v.stage), hunger: Number(v.hunger), happiness: Number(v.happiness), ranAway: v.ranAway, feeds: Number(v.feeds), plays: Number(v.plays), treatsReceived: Number(v.treatsReceived), treatsGiven: Number(v.treatsGiven), streak: Number(v.streak), bestStreak: Number(v.bestStreak), nextFeedAt: Number(v.nextFeedAt), nextPlayAt: Number(v.nextPlayAt) };
+}
+
+window.addEventListener("eip6963:announceProvider", (e) => { if (!state.eip6963.some((w) => w.info.uuid === e.detail.info.uuid)) state.eip6963.push(e.detail); });
+window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+function chooseWallet() {
+  return new Promise((resolve) => {
+    const list = state.eip6963;
+    if (list.length <= 1) return resolve(list[0]?.provider || window.ethereum || null);
+    const m = document.createElement("div"); m.className = "modal";
+    m.innerHTML = `<div class="box"><b>Choose a wallet</b>${list.map((w, i) => `<button class="btn" data-i="${i}"><img src="${esc(w.info.icon)}" alt=""/>${esc(w.info.name)}</button>`).join("")}<button class="btn ghost" data-i="x">Cancel</button></div>`;
+    m.onclick = (e) => { const b = e.target.closest("button"); if (!b && e.target !== m) return; m.remove(); resolve(b && b.dataset.i !== "x" ? list[Number(b.dataset.i)].provider : null); };
+    document.body.appendChild(m);
+  });
+}
+
+async function connect() {
+  if (state.demo) { state.account = "0xDem0000000000000000000000000000000000001"; state.hasId = true; demoLoad(); render(); return; }
+  const eth = await chooseWallet();
+  if (!eth) return toast("No wallet found. Open this page in Binance Wallet or a browser with a Web3 wallet.", "err");
+  try {
+    const bp = new ethers.BrowserProvider(eth);
+    await bp.send("eth_requestAccounts", []);
+    const net = await bp.getNetwork();
+    if (Number(net.chainId) !== CONFIG.chainId) {
+      const hex = "0x" + CONFIG.chainId.toString(16);
+      try { await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: hex }] }); }
+      catch (e) {
+        if (e.code === 4902 && CONFIG.chainId === 56) await eth.request({ method: "wallet_addEthereumChain", params: [{ chainId: hex, chainName: "BNB Smart Chain", nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 }, rpcUrls: ["https://bsc-dataseed.bnbchain.org"], blockExplorerUrls: ["https://bscscan.com"] }] });
+        else throw e;
+      }
+    }
+    const provider = new ethers.BrowserProvider(eth);
+    state.signer = await provider.getSigner();
+    state.account = await state.signer.getAddress();
+    eth.on?.("accountsChanged", () => location.reload());
+    eth.on?.("chainChanged", () => location.reload());
+    await refresh();
+  } catch (e) { toast(e.shortMessage || e.message || "Could not connect", "err"); }
+}
+
+async function refresh() {
+  if (state.demo) { demoTick(); render(); return; }
+  try {
+    if (state.account) {
+      state.hasId = await readC.hasAgentId(state.account);
+      state.pet = (await readC.hasPet(state.account)) ? toPet(await readC.getPet(state.account)) : null;
+    }
+    if (state.friend) {
+      state.friendPet = (await readC.hasPet(state.friend)) ? toPet(await readC.getPet(state.friend)) : null;
+      state.friendTreatAt = state.account ? Number(await readC.lastTreat(state.account, state.friend)) : 0;
+    }
+  } catch (e) { console.warn(e); }
+  render();
+}
+
+async function loadBoard() {
+  if (state.demo) { state.list = demoBoard(); renderBoard(); return; }
+  try {
+    const n = Number(await readC.keeperCount());
+    const out = [];
+    for (let i = 0; i < Math.min(n, 2000); i += 200) out.push(...(await readC.getPets(i, 200)).map(toPet));
+    state.list = out; state.keeperCount = n;
+  } catch (e) { console.warn(e); }
+  renderBoard();
+}
+
+async function send(method, args = [], label = "") {
+  if (state.busy) return;
+  if (state.demo) return demoAction(method, args);
+  if (!state.signer) return connect();
+  state.busy = true; render();
+  try {
+    const c = new ethers.Contract(CONFIG.contract, ABI, state.signer);
+    const gas = await c[method].estimateGas(...args);
+    toast("Confirm in your wallet…");
+    const tx = await c[method](...args, { gasLimit: (gas * 13n) / 10n });
+    toast((label || method) + " sent. Waiting for confirmation…");
+    await tx.wait();
+    toast("Done! ✅", "ok");
+    state.busy = false;
+    await refresh(); loadBoard();
+    return true;
+  } catch (e) {
+    let name = e.revert?.name;
+    if (!name) { try { name = iface.parseError(e.data || e.info?.error?.data)?.name; } catch {} }
+    toast(ERR_TEXT[name] || e.shortMessage || e.message || "Transaction failed", "err");
+    return false;
+  } finally { state.busy = false; render(); }
+}
+
+/* ------------------------------------------------------------ demo mode */
+function demoLoad() { state.pet = store("wickpet_demo"); if (state.pet) demoTick(); }
+function demoSave() { store("wickpet_demo", state.pet); }
+function demoTick() {
+  const p = state.pet; if (!p) return;
+  const t = now(), sf = t - p.lastFed, sp = t - p.lastPlayed;
+  p.hunger = Math.min(100, Math.floor(sf * 100 / (72 * 3600)));
+  p.happiness = 100 - Math.min(100, Math.floor(sp * 100 / (48 * 3600)));
+  p.ranAway = sf > 72 * 3600;
+  p.level = 1 + Math.floor(Math.sqrt(p.xp / 20));
+  p.stage = p.xp < 15 ? 0 : p.level <= 3 ? 1 : p.level <= 6 ? 2 : p.level <= 9 ? 3 : 4;
+  p.nextFeedAt = p.feeds ? p.lastFed + FEED_CD : p.bornAt;
+  p.nextPlayAt = p.plays ? p.lastPlayed + PLAY_CD : p.bornAt;
+}
+function demoAction(method, args) {
+  const t = now(); let p = state.pet;
+  const care = () => { const d = Math.floor(t / 86400); if (p.lastCareDay === d) return 0; p.streak = p.lastCareDay === d - 1 ? p.streak + 1 : 1; p.lastCareDay = d; p.bestStreak = Math.max(p.bestStreak, p.streak); return Math.min(p.streak, 10); };
+  if (method === "adopt") {
+    if (!/^[A-Za-z0-9 ._-]{1,20}$/.test(args[0])) return toast(ERR_TEXT.BadName, "err");
+    state.pet = p = { keeper: state.account, name: args[0], species: hash32(args[0] + t) % 6, generation: (p?.generation || 0) + 1, bornAt: t, lastFed: t, lastPlayed: t, xp: 0, feeds: 0, plays: 0, treatsReceived: 0, treatsGiven: 0, streak: 0, bestStreak: 0, lastCareDay: 0 };
+  } else if (method === "feed") {
+    if (p.feeds && t < p.lastFed + FEED_CD) return toast(ERR_TEXT.TooSoon, "err");
+    p.lastFed = t; p.feeds++; p.xp += 10 + care();
+  } else if (method === "play") {
+    if (p.plays && t < p.lastPlayed + PLAY_CD) return toast(ERR_TEXT.TooSoon, "err");
+    p.lastPlayed = t; p.plays++; p.xp += 8 + care();
+  } else if (method === "callHome") {
+    p.lastFed = p.lastPlayed = t; p.xp = Math.floor(p.xp / 2); p.streak = 0;
+  } else if (method === "sendTreat") { toast("Treats need the live contract — demo mode.", "err"); return; }
+  demoTick(); demoSave(); render(); renderBoard();
+  return true;
+}
+function demoBoard() {
+  const t = now();
+  const sample = [["Satoshi Jr", 4, 620, 9], ["Moonbag", 0, 410, 7], ["Wickie", 5, 300, 6], ["Rekt Ralph", 1, 150, 3], ["Ribbit", 3, 90, 2]]
+    .map(([name, species, xp, streak], i) => ({ keeper: "0xDem0" + String(i + 2).padStart(36, "0"), name, species, xp, streak, level: 1 + Math.floor(Math.sqrt(xp / 20)), ranAway: false, hunger: 20, happiness: 70, lastFed: t, generation: 1 }));
+  sample.forEach((p) => { p.stage = p.xp < 15 ? 0 : p.level <= 3 ? 1 : p.level <= 6 ? 2 : p.level <= 9 ? 3 : 4; });
+  if (state.pet) sample.push(state.pet);
+  return sample;
+}
+
+/* ------------------------------------------------------------ render */
+function setBar(id, txtId, val, colorFn) { $(id).style.width = Math.max(2, val) + "%"; $(id).style.background = colorFn(val); if (txtId) $(txtId).textContent = val + "%"; }
+const barColor = (v) => v > 60 ? "linear-gradient(90deg,#a3e635,#22c55e)" : v > 30 ? "linear-gradient(90deg,#ffd27a,#ffa94d)" : "linear-gradient(90deg,#ff8fb1,#ff5c7a)";
+let lastMoodKey = "";
+
+function render() {
+  const p = state.pet;
+  $("connectBtn").textContent = state.account ? (state.demo ? "Demo keeper" : short(state.account)) : "Connect wallet";
+  $("netChip").textContent = state.demo ? "Demo mode" : (CONFIG.chainId === 56 ? "BNB Smart Chain" : "Chain " + CONFIG.chainId);
+  const banner = $("banner");
+  if (state.demo) { banner.className = "banner"; banner.innerHTML = "Demo mode: no contract configured yet. Progress is saved only in this browser. Set <span class='mono'>CONFIG.contract</span> after deploying."; }
+  else banner.className = "banner hidden";
+  $("contractLink").textContent = CONFIG.contract || "not deployed";
+  if (CONFIG.contract) $("contractLink").href = `${CONFIG.explorer}/address/${CONFIG.contract}#code`;
+
+  ["petPanel", "adoptPanel", "noIdPanel"].forEach((id) => $(id).classList.add("hidden"));
+  const box = $("petbox");
+
+  if (!state.account) {
+    const sp = Math.floor(now() / 5) % 6;
+    box.innerHTML = `<div class="hop">${petSVG(sp, 2, "happy")}</div>`;
+    $("petTitle").textContent = "Meet your future pet"; $("petSub").textContent = "";
+  } else if (!state.hasId) {
+    $("noIdPanel").classList.remove("hidden");
+    box.innerHTML = `<div class="wobble">${petSVG(0, 0, "egg")}</div>`;
+    $("bubble").textContent = "No Agent ID, no egg 🥚 Get one in the Binance app first!";
+    $("petTitle").textContent = "Your pet"; $("petSub").textContent = "";
+  } else if (!p) {
+    $("adoptPanel").classList.remove("hidden");
+    box.innerHTML = `<div class="wobble">${petSVG(hash32(state.account) % 6, 0, "egg")}</div>`;
+    $("bubble").textContent = "*the egg wobbles* … give me a name!";
+    $("petTitle").textContent = "Your pet"; $("petSub").textContent = "";
+  } else {
+    $("petPanel").classList.remove("hidden");
+    const mood = moodOf(p);
+    const anim = { happy: "hop", ok: "bob", sad: "slump", starving: "slump", egg: "wobble", gone: "" }[mood];
+    box.innerHTML = `<div class="${anim}">${petSVG(p.species, p.stage, mood, { crack: p.xp >= 10 })}</div>`;
+    $("petTitle").textContent = p.ranAway ? "Your pet ran away" : "Your pet";
+    $("petSub").textContent = `gen ${p.generation}`;
+    $("pName").textContent = p.name;
+    const trait = traitOf(state.account).id;
+    $("pTags").innerHTML = [`${STAGES[p.stage]}`, SPECIES[p.species], trait].map((t, i) => `<span class="tag ${p.stage === 4 && i === 0 ? "gold" : ""}">${esc(t)}</span>`).join("");
+    setBar("fullBar", "fullTxt", 100 - p.hunger, barColor);
+    setBar("happyBar", "happyTxt", p.happiness, barColor);
+    const lo = 20 * (p.level - 1) ** 2, hi = 20 * p.level ** 2;
+    $("lvl").textContent = p.level;
+    $("xpBar").style.width = Math.max(2, Math.round(((p.xp - lo) / (hi - lo)) * 100)) + "%";
+    $("xpTxt").textContent = `${p.xp} / ${hi} XP`;
+    $("sStreak").textContent = p.streak; $("sBest").textContent = p.bestStreak; $("sTreatsIn").textContent = p.treatsReceived;
+    $("sAge").textContent = Math.floor((now() - p.bornAt) / 86400) + "d";
+    $("liveActions").classList.toggle("hidden", p.ranAway);
+    $("goneActions").classList.toggle("hidden", !p.ranAway);
+    const key = mood + p.stage;
+    if (key !== lastMoodKey) { lastMoodKey = key; petSays(""); }
+    renderAgentPrompt();
+  }
+  $("feedBtn").disabled = $("playBtn").disabled = state.busy;
+  $("adoptBtn").disabled = state.busy;
+
+  if (state.account) {
+    const link = `${location.origin}${location.pathname}?friend=${state.account}`;
+    $("inviteLink").value = link;
+  }
+  renderFriend();
+  tickCooldowns();
+}
+
+function tickCooldowns() {
+  const p = state.pet; if (!p || p.ranAway) return;
+  const t = now();
+  const f = p.nextFeedAt - t, g = p.nextPlayAt - t;
+  $("feedCd").textContent = f > 0 ? "in " + fmtCd(f) : "ready!";
+  $("playCd").textContent = g > 0 ? "in " + fmtCd(g) : "ready!";
+  $("feedBtn").disabled = state.busy || f > 0;
+  $("playBtn").disabled = state.busy || g > 0;
+}
+
+function renderFriend() {
+  const card = $("friendCard");
+  if (!state.friend || (state.account && state.friend.toLowerCase() === state.account.toLowerCase())) return card.classList.add("hidden");
+  card.classList.remove("hidden");
+  const fp = state.friendPet;
+  if (!fp) { $("friendSvg").innerHTML = petSVG(0, 0, "egg"); $("friendName").textContent = "No pet yet"; $("friendInfo").textContent = short(state.friend); $("friendTreatBtn").disabled = true; return; }
+  $("friendSvg").innerHTML = petSVG(fp.species, fp.stage, moodOf(fp));
+  $("friendName").textContent = fp.name;
+  $("friendInfo").textContent = `${STAGES[fp.stage]} ${SPECIES[fp.species]} · Lvl ${fp.level} · fullness ${100 - fp.hunger}% · keeper ${short(fp.keeper)}`;
+  const wait = state.friendTreatAt ? state.friendTreatAt + 86400 - now() : 0;
+  const btn = $("friendTreatBtn");
+  btn.disabled = state.busy || fp.ranAway || wait > 0 || !state.pet || state.pet.ranAway;
+  btn.textContent = fp.ranAway ? "This pet ran away 💨" : wait > 0 ? `Next treat in ${fmtCd(wait)}` : "Send a treat 🍬";
+  $("friendNote").textContent = !state.account ? "Connect your wallet to send a treat." : !state.pet ? "Adopt your own pet first, then you can send treats." : "A treat removes 12h of hunger. +5 XP for them, +3 XP for you.";
+}
+
+function renderBoard() {
+  const rows = [...state.list].sort((a, b) => (a.ranAway - b.ranAway) || (b.xp - a.xp) || (b.streak - a.streak)).slice(0, 20);
+  $("lbSub").textContent = state.demo ? "demo data" : `${state.keeperCount || state.list.length} pets`;
+  if (!rows.length) { $("lbBody").innerHTML = `<tr><td colspan="6" class="muted">No pets yet. Be the first keeper!</td></tr>`; return; }
+  const me = state.account?.toLowerCase();
+  $("lbBody").innerHTML = rows.map((p, i) => {
+    const mine = p.keeper.toLowerCase() === me;
+    const canTreat = !state.demo && state.pet && !state.pet.ranAway && !mine && !p.ranAway;
+    return `<tr class="${mine ? "me" : ""} ${p.ranAway ? "gone" : ""}">
+      <td class="rank">${["🥇","🥈","🥉"][i] || i + 1}</td>
+      <td><div class="mini">${petSVG(p.species, p.stage, p.ranAway ? "gone" : moodOf(p))}</div></td>
+      <td><b>${esc(p.name)}</b><br/><span class="small muted mono">${mine ? "you" : short(p.keeper)}</span></td>
+      <td>${p.level}</td><td>${p.streak}</td>
+      <td>${canTreat ? `<button class="btn tbtn" data-treat="${p.keeper}">🍬</button>` : ""}</td></tr>`;
+  }).join("");
+}
+
+function renderAgentPrompt() {
+  if (!CONFIG.contract) { $("agentPrompt").textContent = "Available after the contract is deployed."; return; }
+  const feed = iface.encodeFunctionData("feed"), play = iface.encodeFunctionData("play");
+  $("agentPrompt").textContent =
+`Take care of my WickPet on BNB Smart Chain (chain id ${CONFIG.chainId}).
+Contract: ${CONFIG.contract} (verified on BscScan)
+- Feed (every 4h): call the contract with data ${feed}, value 0
+- Play (every 4h): call the contract with data ${play}, value 0
+Before each action, read getPet(${state.account}) and only act when nextFeedAt / nextPlayAt has passed.
+Always show me the transaction and wait for my confirmation. Never send value or approve tokens.`;
+}
+
+/* ------------------------------------------------------------ events */
+$("connectBtn").onclick = () => state.account ? null : connect();
+$("adoptBtn").onclick = async () => { const n = $("nameInput").value.trim(); if (!n) return toast("Give your pet a name first", "err"); if (await send("adopt", [n], "Adoption")) { lastMoodKey = ""; } };
+$("nameInput").onkeydown = (e) => { if (e.key === "Enter") $("adoptBtn").click(); };
+$("feedBtn").onclick = async () => { if (await send("feed", [], "Feeding")) { burst("🍖"); $("bubble").textContent = pick(LINES.thanks); } };
+$("playBtn").onclick = async () => { if (await send("play", [], "Play time")) { burst("🎾"); $("bubble").textContent = pick(LINES.played); } };
+$("callHomeBtn").onclick = async () => { if (await send("callHome", [], "Calling home")) { lastMoodKey = ""; burst("🏠"); } };
+$("readoptBtn").onclick = () => { $("petPanel").classList.add("hidden"); $("adoptPanel").classList.remove("hidden"); };
+$("talkBtn").onclick = () => { const m = $("talkInput").value.trim(); if (!m) return; $("talkInput").value = ""; petSays(m); };
+$("talkInput").onkeydown = (e) => { if (e.key === "Enter") $("talkBtn").click(); };
+$("bubble").onclick = () => petSays("");
+$("petbox").onclick = () => { if (state.pet) { burst("💛"); petSays(""); } };
+$("copyInvite").onclick = () => copy($("inviteLink").value);
+$("copyAgent").onclick = () => copy($("agentPrompt").textContent);
+$("friendTreatBtn").onclick = async () => { if (await send("sendTreat", [state.friend], "Treat")) burst("🍬"); };
+$("lbBody").onclick = async (e) => { const b = e.target.closest("[data-treat]"); if (b && await send("sendTreat", [b.dataset.treat], "Treat")) burst("🍬"); };
+$("shareBtn").onclick = () => {
+  const p = state.pet; if (!p) return;
+  const text = `My WickPet ${p.name} is a Level ${p.level} ${SPECIES[p.species]} with a ${p.streak}-day streak 🔥🐾\nAdopt yours with your Agent ID and send mine a treat:`;
+  const url = `${location.origin}${location.pathname}?friend=${state.account}`;
+  window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}&hashtags=BinanceWalletHackathon,AgenticWallet`, "_blank", "noopener");
+};
+function copy(t) { navigator.clipboard?.writeText(t).then(() => toast("Copied!", "ok"), () => toast("Copy failed — select and copy manually", "err")); }
+function burst(emoji) {
+  const st = $("stage");
+  for (let i = 0; i < 5; i++) {
+    const s = document.createElement("span"); s.className = "float"; s.textContent = emoji;
+    s.style.left = 30 + Math.random() * 40 + "%"; s.style.top = 45 + Math.random() * 25 + "%"; s.style.animationDelay = i * 0.12 + "s";
+    st.appendChild(s); setTimeout(() => s.remove(), 2000);
+  }
+}
+
+/* ------------------------------------------------------------ boot */
+(async function boot() {
+  const q = new URLSearchParams(location.search);
+  const f = q.get("friend");
+  if (f && ethers.isAddress(f)) state.friend = ethers.getAddress(f);
+  drawSky(0);
+  render();
+  loadBtc(); setInterval(loadBtc, 60000);
+  await refresh();
+  loadBoard();
+  setInterval(tickCooldowns, 1000);
+  setInterval(() => { refresh(); }, 30000);
+  setInterval(loadBoard, 120000);
+  setInterval(() => { if (state.pet && document.visibilityState === "visible" && Math.random() < 0.5) petSays(""); }, 25000);
+})();
+</script>
+</body>
+</html>
