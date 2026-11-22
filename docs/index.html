@@ -193,6 +193,41 @@
   .modal .box { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 18px; width: 320px; box-shadow: var(--shadow-lg); }
   .modal .box button { width: 100%; margin-top: 8px; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 10px; }
   .modal .box img { width: 24px; height: 24px; }
+  /* v4: centered hero, bigger type */
+  html, body { font-size: 17px; }
+  .hero { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 48px 6px 26px; }
+  .hero h1 { font-size: clamp(42px, 6.6vw, 76px); margin: 18px 0 4px; }
+  .hero p { font-size: clamp(17px, 1.6vw, 20.5px); max-width: 680px; margin: 6px auto 0; }
+  .hero .cta, .hero .trust { justify-content: center; }
+  .hero .trust { font-size: 15px; }
+  .eyebrow { font-size: 14px; padding: 7px 14px; }
+  .hero-pet { position: relative; width: min(340px, 78vw); height: min(340px, 78vw); margin: 4px auto -6px; cursor: pointer; }
+  .hero-pet::before { content: ""; position: absolute; inset: 12% 8% 6%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255,255,255,.95), rgba(187,247,208,.55) 55%, transparent 75%); z-index: -1; }
+  .hero-pet .pv { position: absolute; inset: 0; animation: heroIn .7s cubic-bezier(.2,.9,.3,1.25) both; }
+  .hero-pet .pv.out { animation: heroOut .4s ease both; }
+  .hero-pet svg { width: 100%; height: 100%; filter: drop-shadow(0 18px 24px rgba(22, 101, 52, .22)); }
+  .hero-pet .hop { animation-duration: 1.4s; }
+  @keyframes heroIn { from { opacity: 0; transform: scale(.6) translateY(30px); } to { opacity: 1; transform: none; } }
+  @keyframes heroOut { to { opacity: 0; transform: scale(.85) translateY(-10px); } }
+  .hero-name { font-weight: 800; font-size: 15px; color: #166534; background: #f0fdf4; border: 1px solid #c8ecd5; padding: 5px 14px; border-radius: 999px; margin-bottom: 14px; letter-spacing: .01em; }
+  .logo { font-size: 21px; } .logo small { font-size: 13px; }
+  .nav a { font-size: 15.5px; }
+  .chip { font-size: 13.5px; }
+  .btn { font-size: 15.5px; } .btn.lg { font-size: 17px; padding: 15px 26px; }
+  .card h2 { font-size: 20px; } .card h2 .sub { font-size: 14px; }
+  .bubble { font-size: 16px; }
+  .petname .n { font-size: 32px; }
+  .bar label { font-size: 14px; }
+  .actions .btn { font-size: 16.5px; } .actions .btn small { font-size: 12.5px; }
+  .stat b { font-size: 25px; } .stat span { font-size: 12.5px; }
+  .talk input { font-size: 16px; }
+  .lb { font-size: 15.5px; } .lb th { font-size: 12.5px; }
+  .how div { font-size: 15.5px; } .how b { font-size: 18px; }
+  .small { font-size: 14.5px; }
+  footer { font-size: 13.5px; }
+  @media (max-width: 1360px) { .chip:has(#netChip) { display: none; } }
+  .nav a { padding: 8px 10px; }
+  .hero-pet { margin-top: 0; }
   #snow { position: fixed; inset: 0; pointer-events: none; z-index: 30; }
   button.chip { cursor: pointer; font-family: inherit; }
   .chip.off { opacity: .55; text-decoration: line-through; }
@@ -206,7 +241,7 @@
     <div class="logo"><span class="mark">🐾</span><div><span class="title">WickPet</span><small>an AI pet for every Agent ID · by HTP96</small></div></div>
     <nav class="nav"><a href="#play">Play</a><a href="#board">Leaderboard</a><a href="#how">How it works</a><a href="https://github.com/wickpetagent/wickpet" target="_blank" rel="noopener">GitHub</a></nav>
     <div class="hdr-right">
-      <button id="snowBtn" class="chip" title="Snow on/off">❄️ Snow</button>
+      <button id="snowBtn" class="chip" title="Snow on/off">🪙 BNB rain</button>
       <span id="btcChip" class="chip mono">BTC …</span>
       <span class="chip"><span class="dot"></span><span id="netChip">BNB Smart Chain</span></span>
       <button id="connectBtn" class="btn primary">Connect wallet</button>
@@ -214,18 +249,13 @@
   </header>
 
   <section class="hero">
-    <div>
-      <span class="eyebrow"><span class="dot"></span>Live on BNB Chain · Agent ID Hackathon</span>
-      <h1>Your Agent ID deserves a <span class="grad">pet.</span></h1>
-      <p>Adopt one on-chain companion per Agent ID. Feed it, play with it and keep your streak alive, or it runs away. Every pet has its own AI personality.</p>
-      <div class="cta"><button class="btn primary lg" id="heroConnect">🥚 Adopt your pet</button><a class="btn lg" href="#how">How it works</a></div>
-      <div class="trust"><span>✓ 1 Agent ID = 1 pet</span><span>✓ No tokens, no approvals</span><span>✓ Open source &amp; verified</span></div>
-    </div>
-    <div class="hero-stats">
-      <div class="kpi"><b id="kPets">—</b><span>Pets adopted</span></div>
-      <div class="kpi"><b id="kActions">—</b><span>On-chain care actions</span></div>
-      <div class="kpi"><b id="kKeepers">—</b><span>Agent ID keepers</span></div>
-    </div>
+    <span class="eyebrow"><span class="dot"></span>Live on BNB Chain · Agent ID Hackathon</span>
+    <h1>Your Agent ID deserves a <span class="grad">pet.</span></h1>
+    <div class="hero-pet" id="heroPet" title="Meet the WickPets"></div>
+    <div class="hero-name" id="heroName">Bull</div>
+    <p>Adopt one on-chain companion per Agent ID. Feed it, play with it and keep your streak alive, or it runs away. Every pet has its own AI personality.</p>
+    <div class="cta"><button class="btn primary lg" id="heroConnect">🥚 Adopt your pet</button><a class="btn lg" href="#how">How it works</a></div>
+    <div class="trust"><span>✓ 1 Agent ID = 1 pet</span><span>✓ No tokens, no approvals</span><span>✓ Open source &amp; verified</span></div>
   </section>
 
   <div id="banner" class="banner hidden"></div>
@@ -939,52 +969,53 @@ async function loadStats() {
 }
 $("heroConnect").onclick = () => { document.getElementById("play").scrollIntoView({ behavior: "smooth" }); if (!state.account) connect(); };
 
-/* ------------------------------------------------------------ snow */
+/* ------------------------------------------------------------ BNB coin rain + hero pet */
 const Snow = (() => {
   const cv = document.createElement("canvas");
   cv.id = "snow";
   document.body.appendChild(cv);
   const ctx = cv.getContext("2d");
-  const sprite = document.createElement("canvas");
-  sprite.width = sprite.height = 32;
-  const sc = sprite.getContext("2d"), gr = sc.createRadialGradient(16, 16, 0, 16, 16, 16);
-  gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.5, "rgba(255,255,255,.95)");
-  gr.addColorStop(.72, "rgba(170,215,198,.55)"); gr.addColorStop(1, "rgba(170,215,198,0)");
-  sc.fillStyle = gr; sc.fillRect(0, 0, 32, 32);
-  let W = 0, H = 0, flakes = [], t = 0, running = false;
+  const S = 96, sprite = document.createElement("canvas");
+  sprite.width = sprite.height = S;
+  const g = sprite.getContext("2d"), m = S / 2;
+  let gr = g.createRadialGradient(m * .7, m * .6, 2, m, m, m);
+  gr.addColorStop(0, "#fff3b0"); gr.addColorStop(.45, "#f6c445"); gr.addColorStop(1, "#b7791f");
+  g.fillStyle = gr; g.beginPath(); g.arc(m, m, m - 2, 0, 6.2832); g.fill();
+  g.lineWidth = 3; g.strokeStyle = "#a16207"; g.stroke();
+  g.beginPath(); g.arc(m, m, m - 11, 0, 6.2832); g.lineWidth = 2.5; g.strokeStyle = "rgba(161,98,7,.55)"; g.stroke();
+  gr = g.createRadialGradient(m, m, 4, m, m, m - 12);
+  gr.addColorStop(0, "#fde68a"); gr.addColorStop(1, "#eab308");
+  g.fillStyle = gr; g.beginPath(); g.arc(m, m, m - 13, 0, 6.2832); g.fill();
+  g.font = "800 25px 'Plus Jakarta Sans', system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillStyle = "rgba(255,255,255,.75)"; g.fillText("BNB", m, m + 2);
+  g.fillStyle = "#854d0e"; g.fillText("BNB", m, m);
+  g.fillStyle = "rgba(255,255,255,.55)"; g.beginPath(); g.ellipse(m * .62, m * .45, 13, 6, -0.6, 0, 6.2832); g.fill();
+
+  let W = 0, H = 0, coins = [], t = 0, running = false;
   let on = store("wickpet_snow"); if (on === null) on = true;
   if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) on = false;
-  const mk = (init) => { const z = Math.random(); return { x: Math.random() * W, y: init ? Math.random() * H : -12, r: 1.4 + z * 4.2, z, vy: .35 + z * 1.15, ph: Math.random() * 6.28, amp: .3 + Math.random() * .9, rot: Math.random() * 6.28, star: z > .86 }; };
+  const mk = (init) => { const z = Math.random(); return { x: Math.random() * W, y: init ? Math.random() * H : -40, r: 9 + z * 13, z, vy: .5 + z * 1.3, ph: Math.random() * 6.28, amp: .2 + Math.random() * .6, spin: Math.random() * 6.28, vs: .02 + Math.random() * .04, tilt: (Math.random() - .5) * .6 }; };
   function resize() {
     const d = Math.min(2, window.devicePixelRatio || 1);
     W = innerWidth; H = innerHeight;
     cv.width = W * d; cv.height = H * d; cv.style.width = W + "px"; cv.style.height = H + "px";
     ctx.setTransform(d, 0, 0, d, 0, 0);
-    const n = Math.round(Math.min(150, (W * H) / 9500));
-    while (flakes.length < n) flakes.push(mk(true));
-    flakes.length = n;
-  }
-  function star(f) {
-    ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.rot);
-    ctx.strokeStyle = `rgba(52,140,118,${.45 + f.z * .35})`; ctx.lineWidth = 1.2; ctx.lineCap = "round";
-    const L = f.r * 2.2;
-    for (let i = 0; i < 6; i++) {
-      ctx.rotate(Math.PI / 3); ctx.beginPath();
-      ctx.moveTo(0, 0); ctx.lineTo(0, L);
-      ctx.moveTo(0, L * .55); ctx.lineTo(L * .28, L * .8);
-      ctx.moveTo(0, L * .55); ctx.lineTo(-L * .28, L * .8);
-      ctx.stroke();
-    }
-    ctx.restore();
+    const n = Math.round(Math.min(42, (W * H) / 32000));
+    while (coins.length < n) coins.push(mk(true));
+    coins.length = n;
   }
   function frame() {
     if (!on) { ctx.clearRect(0, 0, W, H); running = false; return; }
     t += .016; ctx.clearRect(0, 0, W, H);
-    for (const f of flakes) {
-      f.y += f.vy; f.x += Math.sin(t * 1.1 + f.ph) * f.amp * .6 + .12; f.rot += .006;
-      if (f.y > H + 12 || f.x > W + 12 || f.x < -12) Object.assign(f, mk(false));
-      if (f.star) star(f);
-      else { ctx.globalAlpha = .7 + f.z * .3; const s = f.r * 2.4; ctx.drawImage(sprite, f.x - s / 2, f.y - s / 2, s, s); ctx.globalAlpha = 1; }
+    for (const c of coins) {
+      c.y += c.vy; c.x += Math.sin(t * .9 + c.ph) * c.amp * .5; c.spin += c.vs;
+      if (c.y > H + 40) Object.assign(c, mk(false));
+      const sx = Math.cos(c.spin), w = c.r * 2 * Math.max(.08, Math.abs(sx));
+      ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.tilt + Math.sin(t + c.ph) * .15);
+      ctx.globalAlpha = .55 + c.z * .45;
+      if (sx < 0) ctx.filter = "brightness(.85)";
+      ctx.drawImage(sprite, -w / 2, -c.r, w, c.r * 2);
+      ctx.restore();
     }
     requestAnimationFrame(frame);
   }
@@ -993,6 +1024,20 @@ const Snow = (() => {
   addEventListener("resize", resize);
   resize(); start();
   setTimeout(() => { const b = $("snowBtn"); if (b) { b.classList.toggle("off", !on); b.onclick = () => set(!on); } });
+
+  // Hero pet showcase: cycles through the six species
+  let hs = 0;
+  const showHero = () => {
+    const box = $("heroPet"); if (!box) return;
+    const old = box.querySelector(".pv"); if (old) { old.classList.add("out"); setTimeout(() => old.remove(), 400); }
+    const el = document.createElement("div"); el.className = "pv";
+    el.innerHTML = "<div class='hop'>" + petSVG(hs, 3, "happy") + "</div>";
+    box.appendChild(el);
+    const nm = $("heroName"); if (nm) nm.textContent = SPECIES[hs];
+    hs = (hs + 1) % 6;
+  };
+  showHero(); setInterval(showHero, 3200);
+  const hp = $("heroPet"); if (hp) hp.onclick = showHero;
   return { set };
 })();
 
