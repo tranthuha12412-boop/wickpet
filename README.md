@@ -9,6 +9,8 @@ AI personality and jokes about the BTC market (entertainment only, never advice)
 
 Built by **HTP96** for the Binance Wallet × BNB Chain **Agent ID Hackathon** (Nov–Dec 2026).
 
+**▶ Play:** https://tranthuha12412-boop.github.io/wickpet/  ·  **Contract (BNB Chain):** [0x44886b9997Dc2fA7C4C88Fc2EF249105f8c9Da92](https://bscscan.com/address/0x44886b9997Dc2fA7C4C88Fc2EF249105f8c9Da92)
+
 ---
 
 ## Why Agent ID is the core of the game
@@ -53,7 +55,7 @@ ai-worker/worker.js            optional LLM voice for pets (Cloudflare Worker)
 ## Smart contract
 
 - **Agent ID contract (BNB Chain):** `0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F` (SPACE ID Agent ID, ERC-721, non-transferable)
-- **WickPet contract:** `TO_BE_FILLED_AFTER_DEPLOYMENT`
+- **WickPet contract:** [`0x44886b9997Dc2fA7C4C88Fc2EF249105f8c9Da92`](https://bscscan.com/address/0x44886b9997Dc2fA7C4C88Fc2EF249105f8c9Da92#code)
 
 ### Permissions and safety disclosure
 
